@@ -96,10 +96,45 @@ type ClaudeResult = {
   response_accuracy: number;
 };
 
+const ANTHROPIC_VERSION = "2023-06-01";
+const FALLBACK_MODEL = "claude-sonnet-4-5";
+let resolvedModel: Promise<string> | null = null;
+
+/**
+ * Which Claude model to call. `ANTHROPIC_MODEL` wins when set; otherwise ask
+ * the Models API for the newest Sonnet, so a retired alias never breaks the
+ * pipeline. Cached for the life of the server process.
+ */
+export function resolveModel(apiKey: string): Promise<string> {
+  if (process.env.ANTHROPIC_MODEL) return Promise.resolve(process.env.ANTHROPIC_MODEL);
+  if (!resolvedModel) {
+    resolvedModel = (async () => {
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/models?limit=100", {
+          headers: { "x-api-key": apiKey, "anthropic-version": ANTHROPIC_VERSION },
+        });
+        if (!res.ok) throw new Error(`models API ${res.status}`);
+        const data = (await res.json()) as { data: { id: string; created_at: string }[] };
+        const sonnets = data.data
+          .filter((m) => /sonnet/i.test(m.id))
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+        return sonnets[0]?.id ?? data.data[0]?.id ?? FALLBACK_MODEL;
+      } catch (err) {
+        console.error("Could not list Claude models, using fallback:", err);
+        resolvedModel = null; // don't cache a failure — retry on the next call
+        return FALLBACK_MODEL;
+      }
+    })();
+  }
+  return resolvedModel;
+}
+
+export class ExtractionError extends Error {}
+
 export async function claudeExtract(input: ExtractInput): Promise<Extraction | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+  const model = await resolveModel(apiKey);
   const local = toParts(input.capturedAt, input.timezone);
 
   const system = `You extract structured farm activity logs from a worker's spoken answers to a guided voice log.
@@ -122,7 +157,7 @@ The recording was captured at ${String(local.hour).padStart(2, "0")}:${String(lo
     headers: {
       "content-type": "application/json",
       "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      "anthropic-version": ANTHROPIC_VERSION,
     },
     body: JSON.stringify({
       model,
@@ -132,19 +167,20 @@ The recording was captured at ${String(local.hour).padStart(2, "0")}:${String(lo
     }),
   });
   if (!res.ok) {
-    console.error("Claude extraction failed:", res.status, await res.text());
-    return null;
+    const detail = await res.text();
+    console.error("Claude extraction failed:", res.status, detail);
+    throw new ExtractionError(`Claude API ${res.status} (${model}): ${detail.slice(0, 200)}`);
   }
   const data = (await res.json()) as { content: { type: string; text?: string }[] };
   const text = data.content.find((c) => c.type === "text")?.text ?? "";
   const json = text.match(/\{[\s\S]*\}/)?.[0];
-  if (!json) return null;
+  if (!json) throw new ExtractionError("Claude returned no JSON");
 
   let parsed: ClaudeResult;
   try {
     parsed = JSON.parse(json);
   } catch {
-    return null;
+    throw new ExtractionError("Claude returned malformed JSON");
   }
 
   const activity = (Object.keys(ACTIVITY_LABELS) as ActivityType[]).find((k) => k === parsed.activity) ?? "SCOUTING";
@@ -176,12 +212,19 @@ The recording was captured at ${String(local.hour).padStart(2, "0")}:${String(lo
   };
 }
 
-export async function extractLog(input: ExtractInput): Promise<Extraction> {
+/**
+ * Claude when configured, the heuristic otherwise — and the heuristic as a
+ * safety net if the Claude call fails, with the reason attached so the record
+ * page can say why a log was filed without AI.
+ */
+export async function extractLog(input: ExtractInput): Promise<Extraction & { error?: string }> {
   try {
     const viaClaude = await claudeExtract(input);
     if (viaClaude) return viaClaude;
+    return heuristicExtract(input);
   } catch (err) {
     console.error("Claude extraction threw:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return { ...heuristicExtract(input), error: message };
   }
-  return heuristicExtract(input);
 }

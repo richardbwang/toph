@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/auth";
+import { resolveModel } from "@/lib/extract";
 import { QUESTIONS } from "@/lib/voice-log";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const model = apiKey ? await resolveModel(apiKey) : null;
   const rows: [string, string][] = [
     ["Farm", user.farm.name],
     ["Timezone", user.farm.timezone],
     ["Signed in as", `${user.name} (${user.email})`],
     ["Role", user.role === "ADMIN" ? "Admin — can review, tag and delete logs" : "Worker — can record logs"],
-    ["AI extraction", process.env.ANTHROPIC_API_KEY ? `Claude (${process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5"})` : "Keyword heuristic (set ANTHROPIC_API_KEY to enable Claude)"],
+    ["AI extraction", model ? `Claude (${model})` : "Keyword heuristic (set ANTHROPIC_API_KEY to enable Claude)"],
   ];
   return (
     <div className="flex flex-col items-center gap-[10px] px-[16px] md:px-[30px] pb-[30px]">

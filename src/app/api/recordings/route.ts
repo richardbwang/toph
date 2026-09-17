@@ -120,10 +120,18 @@ export async function POST(req: NextRequest) {
       action: "recording.ingested",
       entityType: "activity_log",
       entityId: log.id,
-      meta: { recordingId: rec.id, extraction: extracted.method, durationSec },
+      meta: { recordingId: rec.id, extraction: extracted.method, durationSec, ...(extracted.error ? { extractionError: extracted.error } : {}) },
     });
     revalidatePath("/", "layout");
-    return NextResponse.json({ ok: true, recordingId: rec.id, logId: log.id, extraction: extracted.method, activity: extracted.activity, field: field?.name ?? null });
+    return NextResponse.json({
+      ok: true,
+      recordingId: rec.id,
+      logId: log.id,
+      extraction: extracted.method,
+      extractionError: extracted.error ?? null,
+      activity: extracted.activity,
+      field: field?.name ?? null,
+    });
   } catch (err) {
     console.error("extraction failed", err);
     await db.update(recordings).set({ status: "FAILED" }).where(eq(recordings.id, rec.id));

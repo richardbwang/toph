@@ -74,7 +74,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
   );
   const [elapsed, setElapsed] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [result, setResult] = useState<{ activity: string; field: string | null; extraction: string } | null>(null);
+  const [result, setResult] = useState<{ activity: string; field: string | null; extraction: string; extractionError: string | null } | null>(null);
 
   const mediaRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -213,7 +213,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
       const res = await fetch("/api/recordings", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-      setResult({ activity: data.activity, field: data.field, extraction: data.extraction });
+      setResult({ activity: data.activity, field: data.field, extraction: data.extraction, extractionError: data.extractionError ?? null });
       setPhase("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -375,6 +375,11 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
             ) : null}{" "}
             ({result.extraction === "claude" ? "Claude" : "keyword heuristic"}). It&rsquo;s waiting for review on the dashboard.
           </p>
+          {result.extractionError && (
+            <p className="mt-2 rounded-[8px] bg-row-hover px-3 py-2 text-left text-[12px] leading-4 text-muted">
+              Claude couldn&rsquo;t be used for this one: {result.extractionError}
+            </p>
+          )}
           <div className="mt-5 flex gap-2">
             <button type="button" onClick={reset} className="h-11 flex-1 rounded-[10px] border border-line text-[13px] font-medium text-ink hover:bg-row-hover">
               Record another

@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { activityLogs, auditEvents, logTags, tags, users, type LogStatus } from "@/db/schema";
+import { activityLogs, auditEvents, logTags, recordings, tags, users, type LogStatus } from "@/db/schema";
 import { createSession, destroySession, requireUser, verifyPassword } from "@/lib/auth";
 
 /**
@@ -151,10 +151,17 @@ export async function deleteLogs(logIds: string[]) {
   const user = await requireAdmin();
   const ids = [...new Set(logIds)].slice(0, 500);
   if (!ids.length) return { ok: true as const, deleted: 0 };
+  // Deleting a log removes the entry entirely — the raw recording goes with it,
+  // so "Today's recordings" doesn't keep counting something the manager threw
+  // away. The audit row is what survives.
   const deleted = await db
     .delete(activityLogs)
     .where(and(eq(activityLogs.farmId, user.farm.id), inArray(activityLogs.id, ids)))
-    .returning({ id: activityLogs.id });
+    .returning({ id: activityLogs.id, recordingId: activityLogs.recordingId });
+  const recordingIds = deleted.map((d) => d.recordingId).filter((id): id is string => Boolean(id));
+  if (recordingIds.length) {
+    await db.delete(recordings).where(and(eq(recordings.farmId, user.farm.id), inArray(recordings.id, recordingIds)));
+  }
   if (deleted.length) {
     await db.insert(auditEvents).values(
       deleted.map((row) => ({
@@ -163,6 +170,7 @@ export async function deleteLogs(logIds: string[]) {
         action: "log.deleted",
         entityType: "activity_log",
         entityId: row.id,
+        meta: row.recordingId ? { recordingId: row.recordingId } : null,
       })),
     );
   }
