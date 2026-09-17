@@ -4,6 +4,7 @@ import { Expand, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AudioPlayer } from "./audio-player";
 import { FieldMap, type MapField } from "./field-map";
+import { ReviewControls } from "./review-controls";
 import { TagEditor } from "./tag-editor";
 import type { LogRow } from "@/lib/queries";
 
@@ -42,6 +43,7 @@ export function LogDetail({
           <h3 className="whitespace-nowrap">Summary</h3>
           <p className="w-full opacity-30">{row.summary}</p>
         </div>
+        <ReviewControls logId={row.id} status={row.status} canEdit={canEdit} />
       </div>
 
       {/* Right: the field on a satellite map */}

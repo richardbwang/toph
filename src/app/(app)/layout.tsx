@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { newLogsTodayCount } from "@/lib/queries";
+import { LiveRefresh } from "@/components/live-refresh";
 import { MobileBar, Sidebar } from "@/components/sidebar";
 
 /**
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const badge = await newLogsTodayCount(user.farm.id, user.farm.timezone);
   return (
     <div className="flex min-h-screen flex-col items-start gap-[var(--page-gap)] p-[var(--page-gap)] md:flex-row">
+      <LiveRefresh />
       <MobileBar user={user} />
       <Sidebar user={user} dashboardBadge={badge} />
       <main className="w-full min-w-0 flex-1 self-stretch">{children}</main>

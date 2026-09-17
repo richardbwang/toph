@@ -14,7 +14,7 @@ voice-log pipeline behind the "Play Recording" button.
 
 | Area | What it does |
 | --- | --- |
-| **Dashboard** (`/dashboard`) | The Figma frame. Stat cards, the "New Employee Logs" table, Sort / Filter / Search, expandable rows with waveform playback, tags, transcript summary and a satellite map of the field. |
+| **Dashboard** (`/dashboard`) | The Figma frame. Stat cards, the "New Employee Logs" table, Sort / Filter / Search, expandable rows with waveform playback, tags, review status, transcript summary and a satellite map of the field. Updates live: a log filed from a phone appears without a reload. |
 | **Activity Logs** | The same table over every log, every status, newest first, with a status column. |
 | **Record** (`/record`) | The worker side, hands-free after one tap: the phone reads each of five questions aloud, transcribes the answer live, moves on when the worker pauses or says "next", and files the log through the API. |
 | **Map, Employees, Audit Manager, Reports, Performance** | Secondary pages driven by the same data: fields on a map, per-worker stats, an append-only audit trail, a monthly report with CSV export. |
@@ -107,6 +107,9 @@ phone ──POST /api/recordings (audio + answers + peaks)─▶ Route Handler
   delete, login/logout) and the ingest Route Handler in
   `src/app/api/recordings/route.ts`. Every write re-checks the session, the
   farm and the role, and appends an `audit_events` row.
+- **Live updates**: pages poll `GET /api/pulse` every 5 s while visible (the
+  farm's audit-event count, one indexed row) and re-render only when it
+  changed (`src/components/live-refresh.tsx`).
 - **Time** is stored as absolute instants (`timestamptz`) and always displayed
   in the farm's timezone (`src/lib/time.ts`), so "Today" means today in
   California even though Vercel runs in UTC. Spoken times ("ten to twelve")

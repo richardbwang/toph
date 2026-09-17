@@ -201,7 +201,8 @@ expanding is instant and needs no request.
 
 - **Reads** are Server Components calling `src/lib/queries.ts` directly. No
   REST layer, no `useEffect` fetching, no API client.
-- **Dashboard writes** (add/remove tag, mark reviewed, delete) are **Server
+- **Dashboard writes** (add/remove tag, mark reviewed / flag / mark new from
+  the expanded row or in bulk from the checkboxes, delete) are **Server
   Actions**: a function call from a client component that runs on the server,
   re-checks the session and role, writes, appends an audit event and calls
   `revalidatePath` so the page re-renders with the new data. `useOptimistic`
@@ -212,6 +213,18 @@ expanding is instant and needs no request.
   contract (status codes, JSON errors) independent of any React page.
 - **Audio streaming** and **CSV export** are also Route Handlers because they
   return non-HTML responses.
+- **Live updates** are polling, not websockets. A manager keeps the dashboard
+  open; a log filed from a phone should appear on it without a reload. Every
+  page asks `GET /api/pulse` every 5 s while the tab is visible; it returns
+  the farm's audit-event count (append-only, so it only goes up — a newest
+  timestamp alone is not enough, because seeded demo events can carry a later
+  time of day than "now"), and the page calls `router.refresh()` only when
+  that number moved. One index-only row per poll, nothing for hidden tabs, no
+  connection to keep alive on a serverless host, and `router.refresh()` keeps
+  client state — the expanded row, a half-typed tag, a playing clip — intact.
+  Websockets or SSE would be the upgrade if the farm had hundreds of managers
+  watching at once; for one dashboard per farm, polling is the cheaper and
+  more robust answer.
 
 ## 10. The voice-log pipeline
 
