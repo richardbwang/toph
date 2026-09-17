@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { asc, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { getSessionUser } from "@/lib/auth";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -10,6 +12,11 @@ export default async function LoginPage(props: PageProps<"/login">) {
   const params = await props.searchParams;
   const next = typeof params.next === "string" ? params.next : "";
   const switching = params.switch === "1";
+  const expired = params.expired === "1";
+
+  // Already signed in (a *valid* session, checked in the DB — not just a
+  // cookie)? Then there is nothing to do here.
+  if (await getSessionUser()) redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
 
   // Demo convenience: list the seeded accounts so reviewers can jump in.
   const accounts = await db
@@ -33,7 +40,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
         <div className="rounded-[14px] border border-line bg-surface p-7 shadow-chip">
           <h1 className="text-[20px] font-semibold tracking-[-0.01em]">{switching ? "Switch user" : "Sign in"}</h1>
           <p className="mt-1 text-[13px] text-muted">
-            {switching ? "Choose an account to continue." : "Farm activity, transcribed from the field."}
+            {switching ? "Choose an account to continue." : expired ? "Your session has ended — please sign in again." : "Farm activity, transcribed from the field."}
           </p>
           <LoginForm next={next} accounts={accounts} />
         </div>

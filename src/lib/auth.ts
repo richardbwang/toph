@@ -115,6 +115,12 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 /** Use in layouts/pages/actions that must not run for anonymous visitors. */
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    // A cookie that no longer matches a session row (expired, logged out
+    // elsewhere, or the database was reseeded) gets a "signed out" note
+    // instead of a silent bounce. The cookie itself is replaced on next login.
+    const store = await cookies();
+    redirect(store.get(SESSION_COOKIE)?.value ? "/login?expired=1" : "/login");
+  }
   return user;
 }
