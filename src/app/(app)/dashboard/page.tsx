@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Calendar, ClipboardPen, Percent } from "lucide-react";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { LogsTable } from "@/components/logs-table";
 import { PageHeader } from "@/components/page-header";
 import { SearchBox } from "@/components/search-box";
@@ -24,6 +25,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
 
   return (
     <div className="flex flex-col items-center gap-[10px] px-[16px] md:px-[30px]">
+      <AutoRefresh seconds={30} />
       <PageHeader title="Dashboard" subtitle="An overview of your farm and employee activity">
         <SearchBox pathname="/dashboard" filters={filters} />
       </PageHeader>
