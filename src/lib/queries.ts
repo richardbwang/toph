@@ -127,7 +127,7 @@ export async function listLogs(farmId: string, f: LogFilters, tz: string, limit 
     .orderBy(...orderFor(f.sort))
     .limit(limit);
 
-  const [rows, [{ total }], tagRows] = await Promise.all([
+  const [rows, [{ total }]] = await Promise.all([
     base,
     db
       .select({ total: count() })
@@ -135,14 +135,17 @@ export async function listLogs(farmId: string, f: LogFilters, tz: string, limit 
       .innerJoin(users, eq(activityLogs.workerId, users.id))
       .leftJoin(fields, eq(activityLogs.fieldId, fields.id))
       .where(where),
-    db
-      .select({ logId: logTags.logId, id: tags.id, name: tags.name })
-      .from(logTags)
-      .innerJoin(tags, eq(logTags.tagId, tags.id))
-      .innerJoin(activityLogs, eq(logTags.logId, activityLogs.id))
-      .where(eq(activityLogs.farmId, farmId)),
   ]);
 
+  // Tags only for the rows we are about to show.
+  const tagRows = rows.length
+    ? await db
+        .select({ logId: logTags.logId, id: tags.id, name: tags.name })
+        .from(logTags)
+        .innerJoin(tags, eq(logTags.tagId, tags.id))
+        .where(inArray(logTags.logId, rows.map((r) => r.id)))
+        .orderBy(asc(logTags.createdAt))
+    : [];
   const tagsByLog = new Map<string, { id: string; name: string }[]>();
   for (const t of tagRows) {
     const list = tagsByLog.get(t.logId) ?? [];
@@ -152,12 +155,17 @@ export async function listLogs(farmId: string, f: LogFilters, tz: string, limit 
 
   return {
     total,
-    rows: rows.map((r) => ({
-      ...r,
-      // A recording stored inline is served by the API route; static clips by URL.
-      audioSrc: r.recording ? (r.recording.audioUrl ?? (r.recording.hasInlineAudio ? `/api/recordings/${r.recording.id}/audio` : null)) : null,
-      tags: tagsByLog.get(r.id) ?? [],
-    })),
+    rows: rows.map((r) => {
+      // A left join with no recording yields an object of nulls; normalise to null.
+      const recording = r.recording?.id ? r.recording : null;
+      return {
+        ...r,
+        recording,
+        // A recording stored inline is served by the API route; static clips by URL.
+        audioSrc: recording ? (recording.audioUrl ?? (recording.hasInlineAudio ? `/api/recordings/${recording.id}/audio` : null)) : null,
+        tags: tagsByLog.get(r.id) ?? [],
+      };
+    }),
   };
 }
 
