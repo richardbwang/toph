@@ -34,10 +34,7 @@ type Peaks = Record<string, { durationSec: number; peaks: number[] }>;
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
-  const pool = new Pool({
-    connectionString: url,
-    ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
-  });
+  const pool = new Pool({ connectionString: url });
   const db = drizzle(pool, { schema });
   const peaks: Peaks = JSON.parse(readFileSync(path.join(process.cwd(), "public/audio/peaks.json"), "utf8"));
   const tz = FARM.timezone;

@@ -18,12 +18,10 @@ function createPool() {
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill it in.");
   }
-  return new Pool({
-    connectionString,
-    max: 5,
-    // Neon / Supabase require TLS; a local Postgres does not offer it.
-    ssl: /localhost|127\.0\.0\.1/.test(connectionString) ? undefined : { rejectUnauthorized: false },
-  });
+  // TLS is decided by the connection string: Neon's URL carries
+  // `?sslmode=require`, which node-postgres treats as verify-full (certificate
+  // checked against the system CAs); a local URL without it connects in plain.
+  return new Pool({ connectionString, max: 5 });
 }
 
 const pool = globalForDb.pool ?? createPool();
