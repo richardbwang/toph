@@ -60,10 +60,10 @@ export default function FieldMapInner({
             key={f.id}
             positions={ring(f.boundary)}
             pathOptions={{
-              color: isFocus ? "#ffffff" : "rgba(255,255,255,0.7)",
-              weight: isFocus ? 2 : 1.25,
-              fillColor: isFocus ? "#5b8def" : "#ffffff",
-              fillOpacity: isFocus ? 0.35 : 0.08,
+              color: isFocus ? "#0065f0" : "rgba(255,255,255,0.8)",
+              weight: isFocus ? 1 : 1.25,
+              fillColor: isFocus ? "#0065f0" : "#ffffff",
+              fillOpacity: isFocus ? 0.2 : 0.08,
             }}
           >
             {interactive && (
@@ -76,11 +76,10 @@ export default function FieldMapInner({
         );
       })}
       {focus && (
-        <CircleMarker
-          center={[focus.centerLat, focus.centerLng]}
-          radius={5}
-          pathOptions={{ color: "#ffffff", weight: 2, fillColor: "#3b82f6", fillOpacity: 1 }}
-        />
+        <>
+          <CircleMarker center={[focus.centerLat, focus.centerLng]} radius={8.5} pathOptions={{ color: "#0065f0", weight: 0, fillColor: "#0065f0", fillOpacity: 0.3 }} />
+          <CircleMarker center={[focus.centerLat, focus.centerLng]} radius={4} pathOptions={{ color: "#ffffff", weight: 1.5, fillColor: "#0065f0", fillOpacity: 1 }} />
+        </>
       )}
     </MapContainer>
   );

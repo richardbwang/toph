@@ -1,6 +1,6 @@
 "use client";
 
-import { AudioLines, CheckCheck, Flag, Trash2 } from "lucide-react";
+import { AudioLines, CheckCheck, Flag, Square, SquareCheck, Trash2 } from "lucide-react";
 import { Fragment, useState, useTransition } from "react";
 import { deleteLogs, setLogStatus } from "@/lib/actions";
 import { ACTIVITY_LABELS, type LogFilters } from "@/lib/filters";
@@ -9,6 +9,11 @@ import { formatDate, formatTimeRange } from "@/lib/time";
 import { FilterChips } from "./filter-chips";
 import { LogDetail } from "./log-detail";
 
+/**
+ * The logs card. Rows are flex rows (like the Figma frame) rather than a
+ * <table>, so the expanded detail panel can sit between rows at full width.
+ * ARIA table roles keep it readable for screen readers.
+ */
 export function LogsTable({
   title,
   pathname,
@@ -53,21 +58,22 @@ export function LogsTable({
   };
 
   return (
-    <section className="mt-4 rounded-card border border-line bg-surface" aria-label={title}>
-      <header className="flex items-center justify-between gap-4 px-4 py-3">
-        <h2 className="flex items-center gap-2 text-[13px] font-semibold leading-5 text-ink">
-          <AudioLines size={15} strokeWidth={1.75} aria-hidden />
-          <span>
-            {title} <span className="font-normal text-muted">({total})</span>
+    <section className="flex w-full flex-col items-center overflow-clip rounded-[20px] border border-line-2 bg-surface" aria-label={title}>
+      {/* Card header */}
+      <header className="flex w-full items-center justify-between border-b border-line-2 px-[30px] py-[20px]">
+        <h2 className="flex items-center gap-[10px]">
+          <AudioLines size={16} className="shrink-0 text-ink" aria-hidden />
+          <span className="text-[16px] leading-[normal] whitespace-nowrap text-ink">
+            {title} <span className="text-muted-2">({total})</span>
           </span>
         </h2>
         <FilterChips pathname={pathname} filters={filters} total={total} fields={fields} />
       </header>
 
+      {/* Bulk actions — only visible once something is checked */}
       {canEdit && selected.size > 0 && (
-        <div className="flex items-center gap-2 border-t border-line bg-hover px-4 py-2 text-[12px] text-ink-2">
-          <span className="font-medium">{selected.size} selected</span>
-          <span className="mx-1 text-line">|</span>
+        <div className="flex w-full items-center gap-[10px] border-b border-line-2 bg-row-hover px-[30px] py-[10px] text-[14px] text-ink-2">
+          <span>{selected.size} selected</span>
           <BulkButton icon={CheckCheck} label="Mark reviewed" disabled={pending} onClick={() => bulk((ids) => setLogStatus(ids, "REVIEWED"))} />
           <BulkButton icon={Flag} label="Flag" disabled={pending} onClick={() => bulk((ids) => setLogStatus(ids, "FLAGGED"))} />
           <BulkButton icon={CheckCheck} label="Mark new" disabled={pending} onClick={() => bulk((ids) => setLogStatus(ids, "NEW"))} />
@@ -83,96 +89,93 @@ export function LogsTable({
         </div>
       )}
 
-      <table className="w-full border-collapse text-[12px]">
-        <thead>
-          <tr className="border-t border-line text-left text-[10px] font-medium uppercase tracking-[0.06em] text-muted-2">
-            <th scope="col" className="w-12 px-4 py-2.5">
-              <Checkbox checked={allSelected} onChange={toggleAll} label="Select all" disabled={rows.length === 0} />
-            </th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">
-              Employee
-            </th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">
-              Activity
-            </th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">
-              Date
-            </th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">
-              Field
-            </th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">
-              Time
-            </th>
-            <th scope="col" className="w-20 py-2.5 pr-4">
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={7} className="px-4 py-10 text-center text-[12px] text-muted">
-                No logs match these filters.
-              </td>
-            </tr>
-          )}
-          {rows.map((row) => {
-            const open = expanded === row.id;
-            return (
-              <Fragment key={row.id}>
-                <tr
-                  onClick={() => setExpanded(open ? null : row.id)}
-                  aria-expanded={open}
-                  className="cursor-pointer border-t border-line-2 text-ink-2 hover:bg-hover aria-expanded:bg-selected"
-                >
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox checked={selected.has(row.id)} onChange={() => toggleOne(row.id)} label={`Select ${row.worker.name}`} />
-                  </td>
-                  <td className="py-3 pr-4 text-ink">{row.worker.name}</td>
-                  <td className="py-3 pr-4">{ACTIVITY_LABELS[row.activity]}</td>
-                  <td className="py-3 pr-4">{formatDate(row.startedAt, timezone)}</td>
-                  <td className="py-3 pr-4 uppercase">{row.field?.name ?? "—"}</td>
-                  <td className="py-3 pr-4">{formatTimeRange(row.startedAt, row.endedAt, timezone)}</td>
-                  <td className="py-2 pr-4 text-right">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpanded(open ? null : row.id);
-                      }}
-                      className="h-7 rounded-chip border border-line bg-surface px-3 text-[11px] font-medium text-ink hover:bg-hover"
-                    >
-                      {open ? "Close" : "View"}
-                    </button>
-                  </td>
-                </tr>
-                {open && (
-                  <tr className="bg-surface">
-                    <td colSpan={7} className="p-0">
-                      <LogDetail row={row} tagSuggestions={tags} canEdit={canEdit} />
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+      <div role="table" aria-label={title} className="w-full">
+        {/* Column headers */}
+        <div role="row" className="flex w-full items-center justify-between border-b border-line px-[20px]">
+          <div role="columnheader" className="flex items-center px-[20px] opacity-30">
+            <Checkbox checked={allSelected} onChange={toggleAll} label="Select all" disabled={rows.length === 0} />
+          </div>
+          {["EMPLOYEE", "ACTIVITY", "DATE", "FIELD", "TIME"].map((h) => (
+            <div key={h} role="columnheader" className="flex min-w-px flex-1 items-center px-[10px] py-[20px] opacity-30">
+              <span className="text-[14px] leading-[normal] whitespace-nowrap text-ink-2">{h}</span>
+            </div>
+          ))}
+          <div role="columnheader" className="h-[58px] w-[92px] shrink-0">
+            <span className="sr-only">Actions</span>
+          </div>
+        </div>
+
+        {rows.length === 0 && (
+          <div role="row" className="flex w-full items-center justify-center px-[20px] py-[40px]">
+            <span role="cell" className="text-[14px] text-muted">
+              No logs match these filters.
+            </span>
+          </div>
+        )}
+
+        {rows.map((row, i) => {
+          const open = expanded === row.id;
+          const last = i === rows.length - 1;
+          return (
+            <Fragment key={row.id}>
+              <div
+                role="row"
+                aria-expanded={open}
+                onClick={() => setExpanded(open ? null : row.id)}
+                className={`flex w-full cursor-pointer items-center justify-between px-[20px] hover:bg-row-hover aria-expanded:bg-row-hover ${last && !open ? "" : "border-b border-line-2"}`}
+              >
+                <div role="cell" className="flex items-center px-[20px] opacity-20 has-[input:checked]:opacity-100" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox checked={selected.has(row.id)} onChange={() => toggleOne(row.id)} label={`Select ${row.worker.name}`} />
+                </div>
+                <Cell>{row.worker.name}</Cell>
+                <Cell>{ACTIVITY_LABELS[row.activity]}</Cell>
+                <Cell>{formatDate(row.startedAt, timezone)}</Cell>
+                <Cell>{row.field ? row.field.name.toUpperCase() : "—"}</Cell>
+                <Cell>{formatTimeRange(row.startedAt, row.endedAt, timezone)}</Cell>
+                <div role="cell" className="flex h-[58px] w-[92px] shrink-0 items-center justify-center px-[30px] py-[20px]">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpanded(open ? null : row.id);
+                    }}
+                    className="flex items-center justify-center rounded-[80px] border border-line-2 bg-surface px-[16px] py-[8px] text-[14px] leading-[normal] whitespace-nowrap text-ink-2 shadow-chip hover:bg-row-hover"
+                  >
+                    {open ? "Close" : "View"}
+                  </button>
+                </div>
+              </div>
+              {open && (
+                <div role="row" className={`w-full bg-surface ${last ? "" : "border-b border-line-2"}`}>
+                  <div role="cell" className="w-full">
+                    <LogDetail row={row} tagSuggestions={tags} canEdit={canEdit} />
+                  </div>
+                </div>
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
     </section>
   );
 }
 
+function Cell({ children }: { children: React.ReactNode }) {
+  return (
+    <div role="cell" className="flex min-w-px flex-1 items-center px-[10px] py-[20px]">
+      <span className="truncate text-[14px] leading-[normal] whitespace-nowrap text-ink-2">{children}</span>
+    </div>
+  );
+}
+
+/** The design draws the checkbox as a 16px Lucide "square"; checked swaps in "square-check". */
 function Checkbox({ checked, onChange, label, disabled }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) {
   return (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={onChange}
-      disabled={disabled}
-      aria-label={label}
-      className="size-3.5 cursor-pointer appearance-none rounded-[3px] border border-[#c9c9c9] bg-surface align-middle checked:border-ink checked:bg-ink checked:bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%223.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M20 6 9 17l-5-5%22/></svg>')] checked:bg-center checked:bg-no-repeat checked:[background-size:10px] disabled:opacity-40"
-    />
+    <label className={`relative flex size-[16px] items-center justify-center ${disabled ? "" : "cursor-pointer"}`}>
+      <input type="checkbox" checked={checked} onChange={onChange} disabled={disabled} aria-label={label} className="peer sr-only" />
+      {checked ? <SquareCheck size={16} className="text-ink" aria-hidden /> : <Square size={16} className="text-ink" aria-hidden />}
+      <span className="pointer-events-none absolute -inset-1 rounded-[3px] peer-focus-visible:ring-2 peer-focus-visible:ring-ink/40" aria-hidden />
+    </label>
   );
 }
 
@@ -194,9 +197,9 @@ function BulkButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex h-7 items-center gap-1.5 rounded-chip border border-line bg-surface px-2.5 text-[11px] font-medium hover:bg-selected disabled:opacity-60 ${danger ? "text-[#c62828]" : "text-ink"}`}
+      className={`flex items-center gap-[8px] rounded-[80px] border border-line bg-surface px-[12px] py-[6px] text-[14px] leading-[normal] shadow-chip hover:bg-row-hover disabled:opacity-60 ${danger ? "text-danger" : "text-ink-2"}`}
     >
-      <Icon size={12} strokeWidth={2} aria-hidden />
+      <Icon size={14} aria-hidden />
       {label}
     </button>
   );

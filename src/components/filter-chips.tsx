@@ -1,6 +1,6 @@
 "use client";
 
-import { ListFilter, SlidersHorizontal, X } from "lucide-react";
+import { Funnel, ListFilter, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -32,14 +32,14 @@ export function FilterChips({
   const fieldName = filters.field ? fields.find((f) => f.id === filters.field)?.name : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-[10px]">
       {filters.sort !== "none" && (
         <ActiveChip label={SORTS[filters.sort].label} href={hrefWith(pathname, filters, { sort: "none" })} clearLabel="Clear sort" />
       )}
 
       <Menu
         trigger={({ open, toggle, id }) => (
-          <MenuButton open={open} toggle={toggle} controls={id} icon={<ListFilter size={13} strokeWidth={2} aria-hidden />} label="Sort" />
+          <MenuButton open={open} toggle={toggle} controls={id} icon={<ListFilter size={16} aria-hidden />} label="Sort" />
         )}
       >
         {(close) => (
@@ -75,7 +75,7 @@ export function FilterChips({
       <Menu
         width={224}
         trigger={({ open, toggle, id }) => (
-          <MenuButton open={open} toggle={toggle} controls={id} icon={<SlidersHorizontal size={13} strokeWidth={2} aria-hidden />} label="Filter" />
+          <MenuButton open={open} toggle={toggle} controls={id} icon={<Funnel size={16} aria-hidden />} label="Filter" />
         )}
       >
         {(close) => (
@@ -123,9 +123,9 @@ function ActiveChip({ label, href, clearLabel }: { label: string; href: string; 
       href={href}
       scroll={false}
       aria-label={`${label} — ${clearLabel}`}
-      className="inline-flex h-7 items-center gap-1.5 rounded-chip bg-chip pr-3 pl-2.5 text-[11px] font-medium text-chip-ink hover:bg-black"
+      className="flex items-center justify-center gap-[10px] rounded-[80px] border border-line bg-chip px-[16px] py-[8px] text-[14px] leading-[normal] whitespace-nowrap text-chip-ink shadow-chip hover:bg-ink-2"
     >
-      <X size={11} strokeWidth={2.5} aria-hidden />
+      <X size={16} aria-hidden />
       <span>{label}</span>
     </Link>
   );
@@ -151,7 +151,7 @@ function MenuButton({
       aria-haspopup="menu"
       aria-expanded={open}
       aria-controls={controls}
-      className="inline-flex h-7 items-center gap-1.5 rounded-chip border border-line bg-surface pr-3 pl-2.5 text-[11px] font-medium text-ink-2 hover:bg-hover aria-expanded:bg-hover"
+      className="flex items-center justify-center gap-[10px] rounded-[80px] border border-line bg-surface px-[16px] py-[8px] text-[14px] leading-[normal] whitespace-nowrap text-ink-2 shadow-chip hover:bg-row-hover aria-expanded:bg-row-hover"
     >
       {icon}
       <span>{label}</span>

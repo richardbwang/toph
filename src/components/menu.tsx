@@ -53,7 +53,7 @@ export function Menu({
 }
 
 export function MenuLabel({ children }: { children: ReactNode }) {
-  return <div className="px-2 pt-1.5 pb-1 text-[10px] font-medium uppercase tracking-[0.06em] text-muted-2">{children}</div>;
+  return <div className="px-2 pt-1.5 pb-1 text-[10px] font-medium uppercase text-muted-2">{children}</div>;
 }
 
 export function MenuItem({
@@ -71,7 +71,7 @@ export function MenuItem({
       role="menuitemradio"
       aria-checked={active}
       onClick={onClick}
-      className="flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-[13px] text-ink-2 hover:bg-hover aria-checked:font-medium aria-checked:text-ink"
+      className="flex h-8 w-full items-center justify-between rounded-[4px] px-2 text-left text-[14px] text-ink-2 hover:bg-row-hover aria-checked:font-medium aria-checked:text-ink"
     >
       <span className="truncate">{children}</span>
       {active && (

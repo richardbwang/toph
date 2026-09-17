@@ -10,6 +10,9 @@
  *   - src/db/seed.ts         inserts everything into Postgres
  */
 import type { ActivityType } from "./schema";
+import { buildTranscript, QUESTIONS } from "@/lib/voice-log";
+
+export { buildTranscript, QUESTIONS };
 
 export const FARM = { name: "Bays Ranch", timezone: "America/Los_Angeles" };
 
@@ -39,7 +42,11 @@ export const WORKERS: { name: string; email: string; voice: string; status?: "AC
 ];
 
 /** Rectangular blocks laid out on real farmland east of Oakdale, CA. */
-function block(name: string, crop: string, acres: number, lat: number, lng: number, dLat = 0.0032, dLng = 0.0045) {
+/** Half-sizes in degrees for a ~40-acre square block at 37.8°N (1° lat ≈ 111 km, 1° lng ≈ 88 km). */
+function block(name: string, crop: string, acres: number, lat: number, lng: number) {
+  const side = Math.sqrt(acres * 4046.86); // metres
+  const dLat = side / 2 / 111_000;
+  const dLng = side / 2 / (111_000 * Math.cos((lat * Math.PI) / 180));
   const ring: [number, number][] = [
     [lng - dLng, lat - dLat],
     [lng + dLng, lat - dLat],
@@ -59,11 +66,11 @@ function block(name: string, crop: string, acres: number, lat: number, lng: numb
 
 export const FIELDS = [
   block("Field A", "Almonds", 42, 37.8062, -120.8492),
-  block("Field B", "Walnuts", 38, 37.8062, -120.8392),
-  block("Field C", "Tomatoes", 55, 37.7992, -120.8492),
-  block("Field D", "Alfalfa", 47, 37.7992, -120.8392),
-  block("Field E", "Pistachios", 31, 37.8132, -120.8442),
-  block("Field F", "Corn (silage)", 60, 37.7922, -120.8442),
+  block("Field B", "Walnuts", 38, 37.8062, -120.8422),
+  block("Field C", "Tomatoes", 55, 37.8012, -120.8492),
+  block("Field D", "Alfalfa", 47, 37.8012, -120.8422),
+  block("Field E", "Pistachios", 31, 37.8112, -120.8457),
+  block("Field F", "Corn (silage)", 60, 37.7962, -120.8457),
 ];
 
 export const TAGS = ["Needs follow-up", "Chemical application", "Weather delay", "Equipment issue", "Verified on site"];
@@ -89,25 +96,6 @@ export type SeedLog = {
   transcript?: string;
   tags?: string[];
 };
-
-export const QUESTIONS = [
-  {
-    key: "activity_type",
-    text: "What type of activity was this — spraying, fertilizing, planting, irrigating, harvesting, scouting, pruning, soil work, or equipment maintenance?",
-  },
-  { key: "field_block", text: "Where were you working (field, block, or area)?" },
-  { key: "product", text: "Did you apply any product? If so, what and how much?" },
-  { key: "time_range", text: "When did you start and when did you finish?" },
-  { key: "notes", text: "Anything else worth noting?" },
-];
-
-/** Builds the "Offline guided voice log" transcript in the format the design shows. */
-export function buildTranscript(createdAtIso: string, answers: string[]) {
-  const qa = QUESTIONS.slice(0, answers.length)
-    .map((q, i) => `Question (${q.key}): ${q.text} Answer: ${answers[i]}`)
-    .join(" ");
-  return `"Offline guided voice log created at ${createdAtIso}. ${qa}`;
-}
 
 const DESIGN_TRANSCRIPT_TAIL =
   `Question (activity_type): What type of activity was this — spraying, fertilizing, planting, irrigating, harvesting, scouting, pruning, soil work, or equipment maintenance? Answer: I'm leaving first, I'm going to go home. Question (field_block): Where were you working (field, block, or area)? Answer: yes, in one part and then 130 and 200 yes, and 130 for uh 160 and no, this yes no, no, uhm no no I remember, uhm uhm uhm, no, I don't remember anything.`;

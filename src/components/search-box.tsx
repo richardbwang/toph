@@ -25,15 +25,15 @@ export function SearchBox({ pathname, filters }: { pathname: string; filters: Lo
   }, [value, filters, pathname, router]);
 
   return (
-    <label className="relative block w-[var(--search-w)]">
-      <Search size={13} strokeWidth={2} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-2" aria-hidden />
+    <label className="flex w-[370px] items-center gap-[10px] rounded-[30px] border border-line bg-surface px-[16px] py-[8px] shadow-chip focus-within:border-ink-2">
+      <Search size={16} className="shrink-0 text-placeholder" aria-hidden />
       <input
         type="search"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search"
         aria-label="Search logs"
-        className="h-8 w-full rounded-chip border border-line bg-surface pr-3 pl-8 text-[12px] text-ink placeholder:text-muted-2 outline-none focus:border-ink-2"
+        className="min-w-0 flex-1 bg-transparent text-[14px] leading-[normal] text-ink placeholder:text-placeholder outline-none"
       />
     </label>
   );

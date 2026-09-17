@@ -20,7 +20,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
     .limit(6);
 
   return (
-    <main className="flex min-h-full items-center justify-center bg-hover px-4 py-12">
+    <main className="flex min-h-full items-center justify-center bg-row-hover px-4 py-12">
       <div className="w-full max-w-[400px]">
         <div className="mb-8 flex items-center gap-2.5">
           <span className="grid size-9 place-items-center rounded-[10px] bg-chip text-chip-ink">
@@ -30,7 +30,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
           </span>
           <span className="text-[20px] font-semibold tracking-[-0.01em]">Toph</span>
         </div>
-        <div className="rounded-card border border-line bg-surface p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="rounded-[14px] border border-line bg-surface p-7 shadow-chip">
           <h1 className="text-[20px] font-semibold tracking-[-0.01em]">{switching ? "Switch user" : "Sign in"}</h1>
           <p className="mt-1 text-[13px] text-muted">
             {switching ? "Choose an account to continue." : "Farm activity, transcribed from the field."}
@@ -38,7 +38,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
           <LoginForm next={next} accounts={accounts} />
         </div>
         <p className="mt-6 text-center text-[12px] text-muted">
-          Demo password for every account: <code className="rounded bg-selected px-1.5 py-0.5 text-ink-2">toph-demo</code>
+          Demo password for every account: <code className="rounded bg-nav-active px-1.5 py-0.5 text-ink-2">toph-demo</code>
         </p>
       </div>
     </main>

@@ -23,9 +23,9 @@ export function LoginForm({ next, accounts }: { next: string; accounts: Account[
                 type="button"
                 onClick={() => setEmail(a.email)}
                 aria-pressed={email === a.email}
-                className="flex items-center gap-2 rounded-[8px] border border-line px-2.5 py-2 text-left text-[13px] hover:bg-hover aria-pressed:border-ink aria-pressed:bg-selected"
+                className="flex items-center gap-2 rounded-[8px] border border-line px-2.5 py-2 text-left text-[13px] hover:bg-row-hover aria-pressed:border-ink aria-pressed:bg-nav-active"
               >
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-selected text-[11px] font-semibold text-ink-2">
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-nav-active text-[11px] font-semibold text-ink-2">
                   {a.name.slice(0, 1)}
                 </span>
                 <span className="min-w-0">

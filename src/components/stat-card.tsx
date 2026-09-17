@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
+/** One of the three figures at the top of the dashboard. */
 export function StatCard({
   icon: Icon,
   label,
@@ -12,14 +13,14 @@ export function StatCard({
   note?: string;
 }) {
   return (
-    <div className="rounded-card border border-line bg-surface px-4 pt-3.5 pb-3.5">
-      <div className="flex items-center gap-2 text-[12px] leading-4 text-ink-2">
-        <Icon size={14} strokeWidth={1.75} aria-hidden />
-        <span>{label}</span>
+    <div className="flex min-w-px flex-1 flex-col items-start gap-[20px] rounded-[14px] border-[0.88px] border-line-2 p-[20px]">
+      <div className="flex items-center gap-[8px]">
+        <Icon size={16} className="shrink-0 text-ink" aria-hidden />
+        <span className="text-[16px] leading-[normal] whitespace-nowrap text-ink">{label}</span>
       </div>
-      <div className="mt-1.5 flex items-baseline gap-3">
-        <span className="text-[30px] font-semibold leading-9 tracking-[-0.02em] text-ink">{value}</span>
-        {note && <span className="text-[11px] leading-4 text-muted">{note}</span>}
+      <div className="flex items-end gap-[20px]">
+        <span className="text-trim text-[48px] leading-[normal] font-medium whitespace-nowrap text-ink">{value}</span>
+        {note && <span className="text-[14px] leading-[normal] whitespace-nowrap text-ink opacity-50">{note}</span>}
       </div>
     </div>
   );

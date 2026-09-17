@@ -6,11 +6,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * Waveform + play button for one recording.
  *
- * The bars come from `recording.waveform` — 120 RMS peaks computed once when
- * the clip was ingested — so drawing them costs nothing at render time and
- * never requires decoding the audio in the browser. The hidden <audio>
- * element does the actual playback; we mirror its time into the SVG.
+ * The bars come from `recording.waveform` — RMS peaks computed once when the
+ * clip was ingested — so drawing them costs nothing at render time and never
+ * requires decoding audio in the browser. A hidden <audio> element does the
+ * playback; its current time drives the playhead and the played/unplayed
+ * colouring, exactly like the Figma waveform (0.88px lines, #003930, the
+ * unplayed part at 25% opacity).
  */
+const HEIGHT = 80.96;
+const MIN_BAR = 7.04;
+
 export function AudioPlayer({ src, peaks, durationSec }: { src: string | null; peaks: number[]; durationSec: number }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -36,7 +41,7 @@ export function AudioPlayer({ src, peaks, durationSec }: { src: string | null; p
       el.removeEventListener("play", onPlay);
       el.removeEventListener("pause", onPause);
     };
-  }, []);
+  }, [src]);
 
   const toggle = useCallback(() => {
     const el = audioRef.current;
@@ -61,47 +66,49 @@ export function AudioPlayer({ src, peaks, durationSec }: { src: string | null; p
   );
 
   const n = Math.max(peaks.length, 1);
-  const slot = 100 / n;
-  const barW = slot * 0.5;
 
   return (
-    <div>
+    <div className="flex w-full flex-col items-center gap-[20px]">
       {src && <audio ref={audioRef} src={src} preload="metadata" />}
-      <div className="relative py-1">
-        <svg
-          width="100%"
-          height="40"
-          role="img"
-          aria-label="Audio waveform"
-          onClick={seek}
-          className={src ? "cursor-pointer" : ""}
-        >
-          {peaks.map((p, i) => {
-            const h = Math.max(6, p * 100);
-            const played = i / n < progress;
-            return (
-              <rect
-                key={i}
-                x={`${i * slot + (slot - barW) / 2}%`}
-                y={`${(100 - h) / 2}%`}
-                width={`${barW}%`}
-                height={`${h}%`}
-                rx="1"
-                className={played ? "fill-ink" : "fill-[#b9c8be]"}
-              />
-            );
-          })}
-          {/* playhead */}
-          <line x1={`${progress * 100}%`} x2={`${progress * 100}%`} y1="0" y2="100%" className="stroke-ink" strokeWidth="1.5" />
-        </svg>
-      </div>
+      <svg
+        width="100%"
+        height={HEIGHT}
+        viewBox={`0 0 ${n} ${HEIGHT}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`Audio waveform, ${Math.round(durationSec)} seconds`}
+        onClick={seek}
+        className={src ? "block cursor-pointer" : "block"}
+      >
+        {peaks.map((p, i) => {
+          const h = MIN_BAR + Math.max(0, Math.min(1, p)) * (HEIGHT - MIN_BAR);
+          // Before playback starts every bar is drawn in the full colour (as in
+          // the design); once playing, bars past the playhead fade to 25%.
+          const played = progress === 0 || (i + 0.5) / n <= progress;
+          return (
+            <line
+              key={i}
+              x1={i + 0.5}
+              x2={i + 0.5}
+              y1={(HEIGHT - h) / 2}
+              y2={(HEIGHT + h) / 2}
+              vectorEffect="non-scaling-stroke"
+              strokeWidth={0.88}
+              className={played ? "stroke-wave" : "stroke-wave-muted opacity-25"}
+            />
+          );
+        })}
+        {progress > 0 && (
+          <line x1={progress * n} x2={progress * n} y1={0} y2={HEIGHT} vectorEffect="non-scaling-stroke" strokeWidth={1} className="stroke-wave" />
+        )}
+      </svg>
       <button
         type="button"
         onClick={toggle}
         disabled={!src}
-        className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-line bg-surface text-[12px] font-medium text-ink hover:bg-hover disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-[10px] rounded-[7.04px] border border-stroke bg-surface px-[8.8px] py-[10.56px] text-[16px] leading-[normal] whitespace-nowrap text-ink hover:bg-row-hover disabled:opacity-50"
       >
-        {playing ? <Pause size={13} strokeWidth={2} aria-hidden /> : <Play size={13} strokeWidth={2} aria-hidden />}
+        {playing ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
         {playing ? "Pause Recording" : "Play Recording"}
       </button>
     </div>
