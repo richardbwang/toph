@@ -8,6 +8,8 @@ voice-log pipeline behind the "Play Recording" button.
 
 **Live demo:** _see the submission email_ · **Login:** `admin@baysranch.com` / `toph-demo`
 
+![The Toph dashboard](docs/dashboard.png)
+
 ## What's in the box
 
 | Area | What it does |
