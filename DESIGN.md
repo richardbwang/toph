@@ -227,7 +227,8 @@ gesture — and after that the phone runs the guided log by itself:
    transcribes its own voice and the manager's playback contains only the
    worker (a short guard after speech ends lets the speaker's tail die away).
 3. The **Web Speech API** then transcribes the answer live (Chrome, Safari). The
-   worker moves on by pausing for ~3 s after answering, or by saying "next"
+   worker moves on by pausing for ~5 s after answering (an on-screen countdown
+   shows the wait, and talking again cancels it), or by saying "next"
    ("done", "skip") — a final transcript segment that is only a command is
    treated as one and not stored. Twelve seconds of nothing moves on with a
    spoken "no answer", so the flow never stalls in a noisy field.

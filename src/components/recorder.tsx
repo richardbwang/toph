@@ -3,7 +3,7 @@
 import { Check, ChevronRight, Ear, Mic, Square, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { QUESTIONS } from "@/lib/voice-log";
+import { QUESTIONS, spokenText } from "@/lib/voice-log";
 
 /**
  * The worker-side "mobile app", in the browser — hands-free after one tap.
@@ -19,8 +19,8 @@ import { QUESTIONS } from "@/lib/voice-log";
  *   never transcribes its own voice and the manager's playback contains only
  *   the worker.
  * - **Listen**: the Web Speech API transcribes live into an editable field.
- *   The worker moves on by pausing for a few seconds after answering, or by
- *   saying "next" (also "done", "skip"). Silence with no answer at all moves
+ *   The worker moves on by pausing for ~5 s after answering (a visible
+ *   countdown; talking again cancels it), or by saying "next" ("done", "skip"). Silence with no answer at all moves
  *   on after a longer wait, so the flow never stalls.
  * - **File**: after the last answer the log is filed automatically, with a
  *   short countdown the worker can interrupt to fix a transcription.
@@ -35,7 +35,8 @@ type Phase = "idle" | "recording" | "review" | "submitting" | "done" | "error";
 type Stage = "asking" | "listening";
 type Worker = { id: string; name: string };
 
-const SILENCE_MS = 3000; // quiet after an answer → next question
+const SILENCE_MS = 5000; // quiet after an answer → next question (people think mid-answer; a countdown shows the wait)
+const COUNTDOWN_AFTER_MS = 1500; // how long a pause lasts before the on-screen "next in…" appears
 const NO_ANSWER_MS = 12_000; // nothing said at all → move on anyway
 const FILE_COUNTDOWN_S = 5;
 const ECHO_GUARD_MS = 250; // let the speaker's tail die before the mic listens again
@@ -149,6 +150,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
   const [answers, setAnswers] = useState<string[]>(() => QUESTIONS.map(() => ""));
   const [interim, setInterim] = useState("");
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [nextIn, setNextIn] = useState<number | null>(null); // seconds until the pause moves on, once one has started
   // null during server render / hydration, then the real answer.
   const speechSupported = useSyncExternalStore(
     () => () => {},
@@ -301,7 +303,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
       if (autoRef.current) {
         setStage("asking");
         pauseRecorder(); // the manager should hear the worker, not the phone
-        await speak(preface + QUESTIONS[index].text);
+        await speak(preface + spokenText(QUESTIONS[index]));
         if (gen !== genRef.current) return; // the worker moved on meanwhile
         await new Promise((r) => setTimeout(r, ECHO_GUARD_MS));
         if (gen !== genRef.current) return;
@@ -309,6 +311,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
       }
 
       setStage("listening");
+      setNextIn(null);
       listeningSinceRef.current = Date.now();
       lastHeardRef.current = 0;
       startRecognition();
@@ -319,6 +322,8 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
           const now = Date.now();
           const quietFor = now - Math.max(lastHeardRef.current, listeningSinceRef.current);
           const answered = finalRef.current.trim().length > 0;
+          const pausing = answered && !interimRef.current && quietFor >= COUNTDOWN_AFTER_MS;
+          setNextIn(pausing ? Math.max(1, Math.ceil((SILENCE_MS - quietFor) / 1000)) : null);
           if (answered && !interimRef.current && quietFor >= SILENCE_MS) advanceRef.current("silence");
           else if (!answered && quietFor >= NO_ANSWER_MS) advanceRef.current("no-answer");
         }, 250);
@@ -333,6 +338,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
       stopWatch();
       stopRecognition();
       silence();
+      setNextIn(null);
       const rec = mediaRef.current;
       if (!rec) return;
       rec.onstop = () => {
@@ -542,9 +548,13 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
                 <>
                   <Volume2 size={14} strokeWidth={2} aria-hidden /> Reading the question…
                 </>
+              ) : nextIn !== null ? (
+                <>
+                  <Ear size={14} strokeWidth={2} aria-hidden /> {qIndex < QUESTIONS.length - 1 ? "Next question" : "Finishing"} in {nextIn}… keep talking to add more
+                </>
               ) : (
                 <>
-                  <Ear size={14} strokeWidth={2} aria-hidden /> Listening — pause, or say &ldquo;next&rdquo;, to continue
+                  <Ear size={14} strokeWidth={2} aria-hidden /> Listening — pause when you&rsquo;re done, or say &ldquo;next&rdquo;
                 </>
               )}
             </p>
