@@ -11,6 +11,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Pool } from "pg";
@@ -36,6 +37,8 @@ async function main() {
   if (!url) throw new Error("DATABASE_URL is not set");
   const pool = new Pool({ connectionString: url });
   const db = drizzle(pool, { schema });
+  // Make sure the tables exist — lets a fresh database be seeded in one step.
+  await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
   const peaks: Peaks = JSON.parse(readFileSync(path.join(process.cwd(), "public/audio/peaks.json"), "utf8"));
   const tz = FARM.timezone;
   const now = new Date();
