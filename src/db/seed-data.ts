@@ -20,7 +20,7 @@ export const ADMIN = {
   name: "Bays Ranch",
   email: "admin@baysranch.com",
   password: "toph-demo",
-  avatarUrl: "/avatars/admin.jpg",
+  avatarUrl: "/avatars/admin.png",
 };
 
 /** Field workers. `voice` picks a TTS voice so the demo clips differ. */
