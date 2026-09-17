@@ -215,17 +215,41 @@ expanding is instant and needs no request.
 
 ## 10. The voice-log pipeline
 
-The brief's "mobile app" is a browser page (`/record`) that works on a phone:
+The brief's "mobile app" is a browser page (`/record`) that works on a phone,
+and the brief says workers record **hands-free**. One tap is unavoidable —
+browsers only open the microphone and start speech output inside a user
+gesture — and after that the phone runs the guided log by itself:
 
-1. `MediaRecorder` captures one audio stream for the whole session.
-2. For each guided question the **Web Speech API** transcribes live (Chrome,
-   Safari); the worker can edit any answer before filing, and browsers without
-   speech recognition fall back to typing.
-3. Waveform peaks are computed **client-side** with the Web Audio API, because a
+1. `MediaRecorder` captures one audio stream for the whole session. A screen
+   wake-lock keeps the phone awake.
+2. Each question is **read aloud** with the browser's speech synthesis. While it
+   speaks, transcription *and* the recording are paused, so the app never
+   transcribes its own voice and the manager's playback contains only the
+   worker (a short guard after speech ends lets the speaker's tail die away).
+3. The **Web Speech API** then transcribes the answer live (Chrome, Safari). The
+   worker moves on by pausing for ~3 s after answering, or by saying "next"
+   ("done", "skip") — a final transcript segment that is only a command is
+   treated as one and not stored. Twelve seconds of nothing moves on with a
+   spoken "no answer", so the flow never stalls in a noisy field.
+4. After the last answer the log is filed automatically behind a five-second
+   countdown; tapping any answer interrupts it for a correction, because
+   transcription is not perfect and the manager should not have to fix what the
+   worker could see was wrong. The result is read back ("Filed as spraying on
+   Field A").
+5. Waveform peaks are computed **client-side** with the Web Audio API, because a
    Vercel function has no ffmpeg and should not spend its budget decoding audio.
-4. `POST /api/recordings` stores the recording with `status = PROCESSING`, runs
+6. `POST /api/recordings` stores the recording with `status = PROCESSING`, runs
    extraction, inserts the `activity_logs` row as `NEW`, marks the recording
    `PROCESSED` (or `FAILED`), and audits the ingest.
+
+Every automatic step has a manual equivalent on screen (Next, Stop, an
+editable transcript, File), and a "Hands-free" switch turns the automation
+off. Browsers without speech recognition get the tap-and-type version. Why
+pause-to-advance rather than a wake word: the Web Speech API cannot listen for
+a keyword without also transcribing everything else, and a pause is what people
+do naturally at the end of an answer; "next" exists for long answers with
+pauses in them. The silence threshold is a constant (`SILENCE_MS`) and is the
+first thing I would tune with real workers.
 
 **Extraction** is `src/lib/extract.ts`. With `ANTHROPIC_API_KEY` set, Claude
 reads the five answers and returns JSON: activity (one of the enum values), the
@@ -264,14 +288,15 @@ Month" chip shows its count in both views (the file shows it in one).
 - **Object storage for uploads** (Vercel Blob or S3 with signed URLs) once
   clips are not tiny.
 - **A real transcription service** (Whisper/Deepgram) server-side, so the
-  mobile client only uploads audio and iOS Safari's speech quirks stop
-  mattering.
+  mobile client only uploads audio and the per-browser speech-recognition
+  differences stop mattering; the hands-free flow would keep its shape, with
+  silence detected from the audio level instead of the recogniser's events.
 - **Row-level security** in Postgres as a second line of defence behind
   `farm_id` scoping.
-- **Tests**: unit tests for `time.ts` and `filters.ts` (pure functions), an
-  integration test for the ingest endpoint, and a Playwright smoke test of the
-  login → dashboard → expand → tag flow (I ran these by hand with Playwright
-  during the build).
+- **More tests**: `time.ts` has unit tests (`npm test`); I would add the same
+  for `filters.ts`, an integration test for the ingest endpoint, and commit the
+  Playwright flows I ran by hand during the build (login → dashboard → expand →
+  tag, and the hands-free recorder driven with fake speech APIs).
 - **Rate limiting** on login and ingest, and password reset / invitations
   instead of seeded passwords.
 - **Editable logs**: a manager should be able to correct a field or product the

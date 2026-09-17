@@ -16,7 +16,7 @@ voice-log pipeline behind the "Play Recording" button.
 | --- | --- |
 | **Dashboard** (`/dashboard`) | The Figma frame. Stat cards, the "New Employee Logs" table, Sort / Filter / Search, expandable rows with waveform playback, tags, transcript summary and a satellite map of the field. |
 | **Activity Logs** | The same table over every log, every status, newest first, with a status column. |
-| **Record** (`/record`) | The worker side. The browser records a guided voice log (five questions), transcribes it live, and files it through the API. |
+| **Record** (`/record`) | The worker side, hands-free after one tap: the phone reads each of five questions aloud, transcribes the answer live, moves on when the worker pauses or says "next", and files the log through the API. |
 | **Map, Employees, Audit Manager, Reports, Performance** | Secondary pages driven by the same data: fields on a map, per-worker stats, an append-only audit trail, a monthly report with CSV export. |
 | **Auth** | Email + password sign-in, server-side sessions, admin vs. worker roles, "Switch User" and "Log Out" from the sidebar. |
 
