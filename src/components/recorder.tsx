@@ -290,21 +290,19 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
             </span>
           </div>
           <p className="mt-4 text-[16px] leading-6 font-medium text-ink">{QUESTIONS[qIndex].text}</p>
-          <div className="mt-4 min-h-[88px] rounded-[8px] bg-row-hover p-3 text-[13px] leading-5 text-ink-2">
-            {speechSupported ? (
-              <>
-                {answers[qIndex]}
-                {interim && <span className="text-muted"> {interim}</span>}
-                {!answers[qIndex] && !interim && <span className="text-muted-2">Listening…</span>}
-              </>
-            ) : (
-              <textarea
-                value={answers[qIndex]}
-                onChange={(e) => setAnswers((prev) => prev.map((a, i) => (i === qIndex ? e.target.value : a)))}
-                placeholder="Type your answer…"
-                className="h-20 w-full resize-none bg-transparent outline-none"
-              />
-            )}
+          {/* Always editable: speech results land here, and the worker can correct or type instead. */}
+          <div className="mt-4 rounded-[8px] bg-row-hover p-3 text-[13px] leading-5 text-ink-2">
+            <textarea
+              value={answers[qIndex]}
+              onChange={(e) => {
+                finalRef.current = e.target.value;
+                setAnswers((prev) => prev.map((a, i) => (i === qIndex ? e.target.value : a)));
+              }}
+              placeholder={speechSupported ? "Listening… (or type your answer)" : "Type your answer…"}
+              rows={3}
+              className="w-full resize-none bg-transparent outline-none placeholder:text-muted-2"
+            />
+            {interim && <p className="mt-1 text-muted">{interim}</p>}
           </div>
           <div className="mt-4 flex gap-2">
             <button
