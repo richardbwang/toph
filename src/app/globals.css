@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — values come from the Figma file (F26 Dev Challenge).
+ * Keep every colour/radius here so the components only reference names.
+ */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #111111;
+  --color-ink-2: #3f3f46;
+  --color-muted: #71717a;
+  --color-muted-2: #a1a1aa;
+  --color-line: #e6e6e6;
+  --color-line-2: #f0f0f0;
+  --color-hover: #f6f6f6;
+  --color-selected: #f3f3f3;
+  --color-chip: #1a1a1a;
+  --color-chip-ink: #ffffff;
+  --color-green: #22a06b;
+  --color-green-soft: #e9f6ee;
+  --color-green-ink: #1c7a4d;
+  --color-focus: #2f6fed;
+
+  --radius-card: 12px;
+  --radius-chip: 999px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet needs its stylesheet globally; imported from the package in the map component. */
+
+:root {
+  --sidebar-w: 240px;
+  --content-max: 1200px;
+  --search-w: 200px;
+  --detail-map-w: 300px;
+  --detail-map-h: 220px;
+}
