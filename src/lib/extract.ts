@@ -1,7 +1,7 @@
 import "server-only";
 import type { ActivityType } from "@/db/schema";
 import { ACTIVITY_LABELS } from "@/lib/filters";
-import { fromParts, toParts } from "@/lib/time";
+import { resolveSpokenRange, toParts } from "@/lib/time";
 
 /**
  * Turns a worker's spoken answers into a structured activity log.
@@ -151,7 +151,7 @@ Return ONLY a JSON object with these keys:
 - end_time: "HH:MM" 24-hour local time or null
 - summary: one or two plain sentences a farm manager would want to read
 - response_accuracy: integer 0-100 — how many of the questions received a clear, usable answer
-The recording was captured at ${String(local.hour).padStart(2, "0")}:${String(local.minute).padStart(2, "0")} local time. Times in the answers are the same day. Never invent facts that were not said.`;
+The recording was captured at ${String(local.hour).padStart(2, "0")}:${String(local.minute).padStart(2, "0")} local time. The work described has already happened — it may be from earlier today or from yesterday (e.g. a log filed after midnight). Return start_time and end_time as clock times only; the server decides the date. Never invent facts that were not said.`;
 
   const user = input.answers.map((a) => `Q (${a.key}): ${a.question}\nA: ${a.answer || "(no answer)"}`).join("\n\n");
 
@@ -189,17 +189,8 @@ The recording was captured at ${String(local.hour).padStart(2, "0")}:${String(lo
   const activity = (Object.keys(ACTIVITY_LABELS) as ActivityType[]).find((k) => k === parsed.activity) ?? "SCOUTING";
   const fieldName = input.fieldNames.find((f) => f.toLowerCase() === String(parsed.field ?? "").toLowerCase()) ?? null;
 
-  const timeOn = (hm: string | null, fallback: Date) => {
-    const m = hm?.match(/^(\d{1,2}):(\d{2})$/);
-    if (!m) return fallback;
-    return fromParts({ year: local.year, month: local.month, day: local.day, hour: Number(m[1]), minute: Number(m[2]) }, input.timezone);
-  };
-  let endedAt = timeOn(parsed.end_time, input.capturedAt);
-  let startedAt = timeOn(parsed.start_time, new Date(endedAt.getTime() - 90 * 60_000));
-  if (startedAt >= endedAt) {
-    startedAt = new Date(endedAt.getTime() - 60 * 60_000);
-  }
-  if (endedAt > input.capturedAt) endedAt = input.capturedAt;
+  // Claude returns clock times only; which day they fall on is decided here.
+  const { startedAt, endedAt } = resolveSpokenRange(parsed.start_time, parsed.end_time, input.capturedAt, input.timezone);
 
   return {
     activity,

@@ -76,6 +76,7 @@ same demo password; the login page lists them).
 | `npm run db:seed` | Reset and load the demo dataset (idempotent). |
 | `npm run db:studio` | Browse the database in Drizzle Studio. |
 | `npm run audio:generate` | Re-synthesise the demo voice clips (needs `ffmpeg`, `espeak-ng`, `mbrola`, `festival` — not required to run the app; the clips are committed). |
+| `npm test` | Unit tests for the timezone and spoken-time logic (`src/lib/time.test.ts`, Node's built-in test runner). |
 | `npm run lint` / `npm run typecheck` | ESLint / `tsc --noEmit`. |
 
 ## How the pieces fit
@@ -108,7 +109,10 @@ phone ──POST /api/recordings (audio + answers + peaks)─▶ Route Handler
   farm and the role, and appends an `audit_events` row.
 - **Time** is stored as absolute instants (`timestamptz`) and always displayed
   in the farm's timezone (`src/lib/time.ts`), so "Today" means today in
-  California even though Vercel runs in UTC.
+  California even though Vercel runs in UTC. Spoken times ("ten to twelve")
+  are clock times with no date; they resolve to the most recent past instant
+  with that wall-clock time, so a log filed just after midnight about the
+  morning lands on the right day (`resolveSpokenRange`, unit-tested).
 
 ## Data model
 

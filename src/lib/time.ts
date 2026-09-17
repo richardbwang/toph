@@ -52,6 +52,53 @@ export function fromParts(parts: Partial<Parts> & { year: number; month: number;
   return new Date(guess);
 }
 
+/**
+ * Spoken times are clock times without a date ("10:00", "12:00"). A voice log
+ * describes work already done, so each one resolves to the most recent instant
+ * with that wall-clock time at or before `capturedAt`: "10:00" spoken at
+ * 12:21 AM is yesterday's 10:00, not a future one. A start that still lands
+ * after the end means the work crossed midnight, so it moves back a day too.
+ * Missing end → the moment of recording; missing start → 90 minutes before
+ * the end; an implausible span (>16 h, i.e. the times were garbled) → the
+ * same 90-minute window before the end.
+ */
+export function resolveSpokenRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+  capturedAt: Date,
+  tz: string,
+): { startedAt: Date; endedAt: Date } {
+  const parse = (hm: string | null | undefined) => {
+    const m = hm?.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return null;
+    const hour = Number(m[1]);
+    const minute = Number(m[2]);
+    return hour < 24 && minute < 60 ? { hour, minute } : null;
+  };
+  const local = toParts(capturedAt, tz);
+  // Date.UTC normalises day 0 / -1 into the previous month, so no calendar math.
+  const onDay = (t: { hour: number; minute: number }, daysBack: number) =>
+    fromParts({ year: local.year, month: local.month, day: local.day - daysBack, hour: t.hour, minute: t.minute }, tz);
+  const latestAtOrBefore = (t: { hour: number; minute: number }, limit: Date) => {
+    for (let back = 0; back < 3; back++) {
+      const candidate = onDay(t, back);
+      if (candidate <= limit) return candidate;
+    }
+    return onDay(t, 2);
+  };
+
+  const endClock = parse(end);
+  const startClock = parse(start);
+  const endedAt = endClock ? latestAtOrBefore(endClock, capturedAt) : capturedAt;
+  const fallbackStart = new Date(endedAt.getTime() - 90 * 60_000);
+  if (!startClock) return { startedAt: fallbackStart, endedAt };
+
+  const startedAt = latestAtOrBefore(startClock, endedAt);
+  const spanMs = endedAt.getTime() - startedAt.getTime();
+  if (spanMs <= 0 || spanMs > 16 * 60 * 60_000) return { startedAt: fallbackStart, endedAt };
+  return { startedAt, endedAt };
+}
+
 export function startOfDay(date: Date, tz: string): Date {
   const { year, month, day } = toParts(date, tz);
   return fromParts({ year, month, day }, tz);

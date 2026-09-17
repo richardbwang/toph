@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "audio:generate": "tsx scripts/gen-audio.ts"
+    "audio:generate": "tsx scripts/gen-audio.ts",
+    "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
