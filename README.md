@@ -2,11 +2,11 @@
 
 Toph lets farm workers log field work by voice and lets the farm manager review
 those logs on a desktop dashboard. This repository is the dashboard from the
-F26 Dev Challenge Figma, implemented as a full-stack app: a Postgres database
+Lavalabs F26 Dev Challenge Figma, implemented as a full-stack app: a Postgres database
 whose tables mirror the shape of the page, session-based login, and a working
 voice-log pipeline behind the "Play Recording" button.
 
-**Live demo:** _see the submission email_ · **Login:** `admin@baysranch.com` / `toph-demo`
+**Login:** `admin@baysranch.com` / `toph-demo`
 
 ![The Toph dashboard](docs/dashboard.png)
 
