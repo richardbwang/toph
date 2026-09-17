@@ -46,15 +46,22 @@ export const recordingStatusEnum = pgEnum("recording_status", [
   "FAILED", // could not transcribe / extract (kept for auditability)
 ]);
 export const recordingSourceEnum = pgEnum("recording_source", ["MOBILE_APP", "WEB", "SEED"]);
+// The union of the guided question's options and the activities the design's
+// table shows (weeding, monitoring, soil testing, seeding, pest control).
 export const activityTypeEnum = pgEnum("activity_type", [
   "SPRAYING",
   "FERTILIZING",
   "PLANTING",
+  "SEEDING",
   "IRRIGATION",
   "HARVESTING",
   "SCOUTING",
+  "MONITORING",
+  "WEEDING",
   "PRUNING",
+  "PEST_CONTROL",
   "SOIL_WORK",
+  "SOIL_TESTING",
   "EQUIPMENT_MAINTENANCE",
 ]);
 export const logStatusEnum = pgEnum("log_status", [

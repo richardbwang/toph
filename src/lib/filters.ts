@@ -51,17 +51,20 @@ export const DEFAULT_FILTERS: LogFilters = {
 type Params = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
+/** The Activity Logs page shows everything, newest first. */
+export const ALL_LOGS_FILTERS: LogFilters = { ...DEFAULT_FILTERS, sort: "date-desc", period: "all", status: "all" };
+
 /** Parses ?q=&sort=&period=&status=&activity=&field= with safe fallbacks. */
-export function parseFilters(params: Params): LogFilters {
+export function parseFilters(params: Params, defaults: LogFilters = DEFAULT_FILTERS): LogFilters {
   const sort = one(params.sort);
   const period = one(params.period);
   const status = one(params.status);
   const activity = one(params.activity);
   return {
     q: one(params.q).trim().slice(0, 100),
-    sort: sort === "none" || sort in SORTS ? (sort as SortKey) : DEFAULT_FILTERS.sort,
-    period: period in PERIODS ? (period as PeriodKey) : DEFAULT_FILTERS.period,
-    status: status in STATUSES ? (status as StatusKey) : DEFAULT_FILTERS.status,
+    sort: sort === "none" || sort in SORTS ? (sort as SortKey) : defaults.sort,
+    period: period in PERIODS ? (period as PeriodKey) : defaults.period,
+    status: status in STATUSES ? (status as StatusKey) : defaults.status,
     activity: ACTIVITY_LABELS[activity as ActivityType] ? (activity as ActivityType) : null,
     field: one(params.field) || null,
   };
@@ -71,11 +74,16 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
   SPRAYING: "Spraying",
   FERTILIZING: "Fertilizing",
   PLANTING: "Planting",
+  SEEDING: "Seeding",
   IRRIGATION: "Irrigation",
   HARVESTING: "Harvesting",
   SCOUTING: "Scouting",
+  MONITORING: "Monitoring",
+  WEEDING: "Weeding",
   PRUNING: "Pruning",
+  PEST_CONTROL: "Pest Control",
   SOIL_WORK: "Soil Work",
+  SOIL_TESTING: "Soil Testing",
   EQUIPMENT_MAINTENANCE: "Equipment Maintenance",
 };
 

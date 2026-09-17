@@ -2,27 +2,32 @@
 
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
-import type { LogFilters } from "@/lib/filters";
+import { useEffect, useState, useTransition } from "react";
+import { DEFAULT_FILTERS, type LogFilters } from "@/lib/filters";
 import { hrefWith } from "@/lib/url";
 
 /** Search writes `?q=` after a short debounce; the server re-renders the rows. */
-export function SearchBox({ pathname, filters }: { pathname: string; filters: LogFilters }) {
+export function SearchBox({ pathname, filters, defaults = DEFAULT_FILTERS }: { pathname: string; filters: LogFilters; defaults?: LogFilters }) {
   const router = useRouter();
   const [value, setValue] = useState(filters.q);
   const [, startTransition] = useTransition();
-  const last = useRef(filters.q);
 
-  useEffect(() => setValue(filters.q), [filters.q]);
+  // When the URL changes underneath us (back button, a chip clearing the
+  // query) adopt the new value — the React-sanctioned "derive during render".
+  const [seenQ, setSeenQ] = useState(filters.q);
+  if (filters.q !== seenQ) {
+    setSeenQ(filters.q);
+    setValue(filters.q);
+  }
 
+  // Debounce: push the typed value into the URL 250ms after the last keystroke.
   useEffect(() => {
-    if (value === last.current) return;
+    if (value === filters.q) return;
     const t = setTimeout(() => {
-      last.current = value;
-      startTransition(() => router.replace(hrefWith(pathname, filters, { q: value }), { scroll: false }));
+      startTransition(() => router.replace(hrefWith(pathname, filters, { q: value }, defaults), { scroll: false }));
     }, 250);
     return () => clearTimeout(t);
-  }, [value, filters, pathname, router]);
+  }, [value, filters, pathname, router, defaults]);
 
   return (
     <label className="flex w-[370px] items-center gap-[10px] rounded-[30px] border border-line bg-surface px-[16px] py-[8px] shadow-chip focus-within:border-ink-2">

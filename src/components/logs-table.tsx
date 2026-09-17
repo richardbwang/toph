@@ -18,22 +18,27 @@ export function LogsTable({
   title,
   pathname,
   filters,
+  defaults,
   total,
   rows,
   fields,
   tags,
   timezone,
   canEdit,
+  showStatus = false,
 }: {
   title: string;
   pathname: string;
   filters: LogFilters;
+  defaults?: LogFilters;
   total: number;
   rows: LogRow[];
   fields: { id: string; name: string }[];
   tags: { id: string; name: string }[];
   timezone: string;
   canEdit: boolean;
+  /** Adds a STATUS column (used on the Activity Logs page, where every status is listed). */
+  showStatus?: boolean;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -67,7 +72,7 @@ export function LogsTable({
             {title} <span className="text-muted-2">({total})</span>
           </span>
         </h2>
-        <FilterChips pathname={pathname} filters={filters} total={total} fields={fields} />
+        <FilterChips pathname={pathname} filters={filters} defaults={defaults} total={total} fields={fields} />
       </header>
 
       {/* Bulk actions — only visible once something is checked */}
@@ -95,7 +100,7 @@ export function LogsTable({
           <div role="columnheader" className="flex items-center px-[20px] opacity-30">
             <Checkbox checked={allSelected} onChange={toggleAll} label="Select all" disabled={rows.length === 0} />
           </div>
-          {["EMPLOYEE", "ACTIVITY", "DATE", "FIELD", "TIME"].map((h) => (
+          {["EMPLOYEE", "ACTIVITY", "DATE", "FIELD", "TIME", ...(showStatus ? ["STATUS"] : [])].map((h) => (
             <div key={h} role="columnheader" className="flex min-w-px flex-1 items-center px-[10px] py-[20px] opacity-30">
               <span className="text-[14px] leading-[normal] whitespace-nowrap text-ink-2">{h}</span>
             </div>
@@ -132,6 +137,13 @@ export function LogsTable({
                 <Cell>{formatDate(row.startedAt, timezone)}</Cell>
                 <Cell>{row.field ? row.field.name.toUpperCase() : "—"}</Cell>
                 <Cell>{formatTimeRange(row.startedAt, row.endedAt, timezone)}</Cell>
+                {showStatus && (
+                  <Cell>
+                    <span className={row.status === "NEW" ? "text-green-ink" : row.status === "FLAGGED" ? "text-danger" : undefined}>
+                      {row.status === "NEW" ? "New" : row.status === "REVIEWED" ? "Reviewed" : "Flagged"}
+                    </span>
+                  </Cell>
+                )}
                 <div role="cell" className="flex h-[58px] w-[92px] shrink-0 items-center justify-center px-[30px] py-[20px]">
                   <button
                     type="button"

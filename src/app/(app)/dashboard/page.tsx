@@ -23,7 +23,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
   ]);
 
   return (
-    <div className="flex flex-col items-center gap-[10px] px-[30px]">
+    <div className="flex flex-col items-center gap-[10px] px-[16px] md:px-[30px]">
       <PageHeader title="Dashboard" subtitle="An overview of your farm and employee activity">
         <SearchBox pathname="/dashboard" filters={filters} />
       </PageHeader>

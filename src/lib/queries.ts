@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, ilike, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { activityLogs, fields, logTags, recordings, tags, users, type ActivityType, type LogStatus } from "@/db/schema";
+import { activityLogs, auditEvents, fields, logTags, recordings, tags, users, type ActivityType, type LogStatus } from "@/db/schema";
 import { ACTIVITY_LABELS, type LogFilters, type PeriodKey, type SortKey, type StatusKey } from "@/lib/filters";
 import { addDays, startOfDay, startOfMonth, startOfNextMonth } from "@/lib/time";
 
@@ -228,4 +228,152 @@ export async function listWorkers(farmId: string) {
     .from(users)
     .where(and(eq(users.farmId, farmId), eq(users.role, "WORKER")))
     .orderBy(asc(users.name));
+}
+
+// ───────────────────────────── Secondary pages ─────────────────────────────
+
+/** Employees page: every worker with this month's log count, average accuracy and last activity. */
+export async function listWorkersWithStats(farmId: string, tz: string, now = new Date()) {
+  const monthStart = startOfMonth(now, tz);
+  const monthEnd = startOfNextMonth(now, tz);
+  const [workers, stats, lastLogs] = await Promise.all([
+    listWorkers(farmId),
+    db
+      .select({
+        workerId: activityLogs.workerId,
+        logs: count(),
+        accuracy: sql<number | null>`round(avg(${activityLogs.responseAccuracy}))`,
+      })
+      .from(activityLogs)
+      .where(and(eq(activityLogs.farmId, farmId), gte(activityLogs.startedAt, monthStart), lt(activityLogs.startedAt, monthEnd)))
+      .groupBy(activityLogs.workerId),
+    db
+      .select({ workerId: activityLogs.workerId, lastAt: sql<Date>`max(${activityLogs.startedAt})` })
+      .from(activityLogs)
+      .where(eq(activityLogs.farmId, farmId))
+      .groupBy(activityLogs.workerId),
+  ]);
+  const statsBy = new Map(stats.map((s) => [s.workerId, s]));
+  const lastBy = new Map(lastLogs.map((l) => [l.workerId, l.lastAt ? new Date(l.lastAt) : null]));
+  return workers.map((w) => ({
+    ...w,
+    logsThisMonth: statsBy.get(w.id)?.logs ?? 0,
+    accuracy: statsBy.get(w.id)?.accuracy == null ? null : Number(statsBy.get(w.id)!.accuracy),
+    lastActiveAt: lastBy.get(w.id) ?? null,
+  }));
+}
+
+/** Audit Manager: newest events first, with the actor's name. */
+export async function listAuditEvents(farmId: string, limit = 200) {
+  return db
+    .select({
+      id: auditEvents.id,
+      action: auditEvents.action,
+      entityType: auditEvents.entityType,
+      entityId: auditEvents.entityId,
+      meta: auditEvents.meta,
+      createdAt: auditEvents.createdAt,
+      actor: { id: users.id, name: users.name, role: users.role },
+    })
+    .from(auditEvents)
+    .leftJoin(users, eq(auditEvents.actorId, users.id))
+    .where(eq(auditEvents.farmId, farmId))
+    .orderBy(desc(auditEvents.createdAt))
+    .limit(limit);
+}
+
+/** Map page: every field with how many logs touched it this month. */
+export async function listFieldsWithCounts(farmId: string, tz: string, now = new Date()) {
+  const monthStart = startOfMonth(now, tz);
+  const monthEnd = startOfNextMonth(now, tz);
+  const [all, counts] = await Promise.all([
+    listFields(farmId),
+    db
+      .select({ fieldId: activityLogs.fieldId, n: count(), lastAt: sql<Date>`max(${activityLogs.startedAt})` })
+      .from(activityLogs)
+      .where(and(eq(activityLogs.farmId, farmId), gte(activityLogs.startedAt, monthStart), lt(activityLogs.startedAt, monthEnd)))
+      .groupBy(activityLogs.fieldId),
+  ]);
+  const by = new Map(counts.map((c) => [c.fieldId, c]));
+  return all.map((f) => ({ ...f, logsThisMonth: by.get(f.id)?.n ?? 0, lastAt: by.get(f.id)?.lastAt ? new Date(by.get(f.id)!.lastAt) : null }));
+}
+
+/** Reports: this month's activity broken down by type, by field, and every product application. */
+export async function monthlyReport(farmId: string, tz: string, now = new Date()) {
+  const monthStart = startOfMonth(now, tz);
+  const monthEnd = startOfNextMonth(now, tz);
+  const inMonth = and(eq(activityLogs.farmId, farmId), gte(activityLogs.startedAt, monthStart), lt(activityLogs.startedAt, monthEnd));
+  const [byActivity, byField, applications, totals] = await Promise.all([
+    db
+      .select({
+        activity: activityLogs.activity,
+        n: count(),
+        hours: sql<number>`round(sum(extract(epoch from (${activityLogs.endedAt} - ${activityLogs.startedAt})) / 3600)::numeric, 1)`,
+      })
+      .from(activityLogs)
+      .where(inMonth)
+      .groupBy(activityLogs.activity)
+      .orderBy(desc(count())),
+    db
+      .select({ fieldId: activityLogs.fieldId, name: fields.name, crop: fields.crop, n: count() })
+      .from(activityLogs)
+      .leftJoin(fields, eq(activityLogs.fieldId, fields.id))
+      .where(inMonth)
+      .groupBy(activityLogs.fieldId, fields.name, fields.crop)
+      .orderBy(desc(count())),
+    db
+      .select({
+        id: activityLogs.id,
+        startedAt: activityLogs.startedAt,
+        activity: activityLogs.activity,
+        product: activityLogs.product,
+        quantity: activityLogs.quantity,
+        unit: activityLogs.unit,
+        status: activityLogs.status,
+        worker: users.name,
+        field: fields.name,
+      })
+      .from(activityLogs)
+      .innerJoin(users, eq(activityLogs.workerId, users.id))
+      .leftJoin(fields, eq(activityLogs.fieldId, fields.id))
+      .where(and(inMonth, sql`${activityLogs.product} is not null`))
+      .orderBy(desc(activityLogs.startedAt)),
+    db
+      .select({
+        logs: count(),
+        hours: sql<number>`round(coalesce(sum(extract(epoch from (${activityLogs.endedAt} - ${activityLogs.startedAt})) / 3600), 0)::numeric, 1)`,
+        reviewed: sql<number>`count(*) filter (where ${activityLogs.status} = 'REVIEWED')`,
+        flagged: sql<number>`count(*) filter (where ${activityLogs.status} = 'FLAGGED')`,
+      })
+      .from(activityLogs)
+      .where(inMonth),
+  ]);
+  return { byActivity, byField, applications, totals: totals[0], monthStart, monthEnd };
+}
+
+/** CSV export: every log in a period, flattened. */
+export async function exportLogs(farmId: string, from: Date | null, to: Date | null) {
+  const clauses = [eq(activityLogs.farmId, farmId)];
+  if (from) clauses.push(gte(activityLogs.startedAt, from));
+  if (to) clauses.push(lt(activityLogs.startedAt, to));
+  return db
+    .select({
+      id: activityLogs.id,
+      worker: users.name,
+      activity: activityLogs.activity,
+      field: fields.name,
+      startedAt: activityLogs.startedAt,
+      endedAt: activityLogs.endedAt,
+      product: activityLogs.product,
+      quantity: activityLogs.quantity,
+      unit: activityLogs.unit,
+      responseAccuracy: activityLogs.responseAccuracy,
+      status: activityLogs.status,
+      summary: activityLogs.summary,
+    })
+    .from(activityLogs)
+    .innerJoin(users, eq(activityLogs.workerId, users.id))
+    .leftJoin(fields, eq(activityLogs.fieldId, fields.id))
+    .where(and(...clauses))
+    .orderBy(asc(activityLogs.startedAt));
 }

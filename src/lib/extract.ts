@@ -34,11 +34,16 @@ export type ExtractInput = {
 
 const KEYWORDS: [ActivityType, RegExp][] = [
   ["SPRAYING", /\bspray/i],
+  ["PEST_CONTROL", /\bpest control|\btrap(s|ping)?\b|\bbait/i],
   ["FERTILIZING", /\bfertili[sz]|\buan\b|nitrogen|potassium|\bnpk\b/i],
-  ["PLANTING", /\bplant|transplant|seed(ing|ed)?\b|cover crop/i],
+  ["SEEDING", /\bseed(ing|ed)\b|\bsow/i],
+  ["PLANTING", /\bplant|transplant|cover crop/i],
   ["IRRIGATION", /\birrigat|water(ing|ed)?\b|drip|sprinkler|pivot/i],
   ["HARVESTING", /\bharvest|pick(ing|ed)?\b|shak(ing|er)|\bchop/i],
-  ["SCOUTING", /\bscout|inspect|pest|check(ing|ed) (the )?(trees|rows|field)/i],
+  ["WEEDING", /\bweed/i],
+  ["SOIL_TESTING", /\bsoil (test|sampl)/i],
+  ["MONITORING", /\bmonitor|sensor|moisture prob/i],
+  ["SCOUTING", /\bscout|inspect|\bpest|check(ing|ed) (the )?(trees|rows|field)/i],
   ["PRUNING", /\bprun|trim|hedg/i],
   ["SOIL_WORK", /\bsoil|disc|disk|till|plow|plough|ripp?ing|cultivat/i],
   ["EQUIPMENT_MAINTENANCE", /\bmaintenance|repair|fix(ed|ing)?\b|service[sd]?\b|tractor|sprayer|nozzle|hydraulic|shop\b/i],

@@ -1,4 +1,4 @@
-CREATE TYPE "public"."activity_type" AS ENUM('SPRAYING', 'FERTILIZING', 'PLANTING', 'IRRIGATION', 'HARVESTING', 'SCOUTING', 'PRUNING', 'SOIL_WORK', 'EQUIPMENT_MAINTENANCE');--> statement-breakpoint
+CREATE TYPE "public"."activity_type" AS ENUM('SPRAYING', 'FERTILIZING', 'PLANTING', 'SEEDING', 'IRRIGATION', 'HARVESTING', 'SCOUTING', 'MONITORING', 'WEEDING', 'PRUNING', 'PEST_CONTROL', 'SOIL_WORK', 'SOIL_TESTING', 'EQUIPMENT_MAINTENANCE');--> statement-breakpoint
 CREATE TYPE "public"."log_status" AS ENUM('NEW', 'REVIEWED', 'FLAGGED');--> statement-breakpoint
 CREATE TYPE "public"."recording_source" AS ENUM('MOBILE_APP', 'WEB', 'SEED');--> statement-breakpoint
 CREATE TYPE "public"."recording_status" AS ENUM('PROCESSING', 'PROCESSED', 'FAILED');--> statement-breakpoint

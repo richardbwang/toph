@@ -17,24 +17,27 @@ import type { ActivityType } from "@/db/schema";
 export function FilterChips({
   pathname,
   filters,
+  defaults = DEFAULT_FILTERS,
   total,
   fields,
 }: {
   pathname: string;
   filters: LogFilters;
+  defaults?: LogFilters;
   total: number;
   fields: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const go = (changes: Partial<LogFilters>) => startTransition(() => router.push(hrefWith(pathname, filters, changes), { scroll: false }));
+  const href = (changes: Partial<LogFilters>) => hrefWith(pathname, filters, changes, defaults);
+  const go = (changes: Partial<LogFilters>) => startTransition(() => router.push(href(changes), { scroll: false }));
 
   const fieldName = filters.field ? fields.find((f) => f.id === filters.field)?.name : null;
 
   return (
     <div className="flex flex-wrap items-center gap-[10px]">
       {filters.sort !== "none" && (
-        <ActiveChip label={SORTS[filters.sort].label} href={hrefWith(pathname, filters, { sort: "none" })} clearLabel="Clear sort" />
+        <ActiveChip label={SORTS[filters.sort].label} href={href({ sort: "none" })} clearLabel="Clear sort" />
       )}
 
       <Menu
@@ -57,20 +60,17 @@ export function FilterChips({
       {filters.period !== "all" && (
         <ActiveChip
           label={`${PERIODS[filters.period]} (${total})`}
-          href={hrefWith(pathname, filters, { period: "all" })}
+          href={href({ period: "all" })}
           clearLabel="Show all time"
         />
       )}
-      {filters.status !== DEFAULT_FILTERS.status && filters.status !== "all" && (
-        <ActiveChip label={STATUSES[filters.status]} href={hrefWith(pathname, filters, { status: DEFAULT_FILTERS.status })} clearLabel="Clear status filter" />
-      )}
-      {filters.status === "all" && (
-        <ActiveChip label="All Statuses" href={hrefWith(pathname, filters, { status: DEFAULT_FILTERS.status })} clearLabel="Back to new logs" />
+      {filters.status !== defaults.status && (
+        <ActiveChip label={STATUSES[filters.status]} href={href({ status: defaults.status })} clearLabel="Clear status filter" />
       )}
       {filters.activity && (
-        <ActiveChip label={ACTIVITY_LABELS[filters.activity]} href={hrefWith(pathname, filters, { activity: null })} clearLabel="Clear activity filter" />
+        <ActiveChip label={ACTIVITY_LABELS[filters.activity]} href={href({ activity: null })} clearLabel="Clear activity filter" />
       )}
-      {fieldName && <ActiveChip label={fieldName} href={hrefWith(pathname, filters, { field: null })} clearLabel="Clear field filter" />}
+      {fieldName && <ActiveChip label={fieldName} href={href({ field: null })} clearLabel="Clear field filter" />}
 
       <Menu
         width={224}

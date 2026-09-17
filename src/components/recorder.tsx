@@ -2,7 +2,7 @@
 
 import { Check, ChevronRight, Mic, Square } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { QUESTIONS } from "@/lib/voice-log";
 
 /**
@@ -66,7 +66,12 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>(() => QUESTIONS.map(() => ""));
   const [interim, setInterim] = useState("");
-  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
+  // null during server render / hydration, then the real answer.
+  const speechSupported = useSyncExternalStore(
+    () => () => {},
+    () => Boolean(getRecognitionCtor()),
+    () => null,
+  );
   const [elapsed, setElapsed] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [result, setResult] = useState<{ activity: string; field: string | null; extraction: string } | null>(null);
@@ -79,8 +84,6 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
   const qIndexRef = useRef(0);
   const startedAtRef = useRef(0);
   const finalRef = useRef(""); // finalised speech for the current question
-
-  useEffect(() => setSpeechSupported(Boolean(getRecognitionCtor())), []);
 
   useEffect(() => {
     if (phase !== "recording") return;
@@ -239,7 +242,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
         <div className="rounded-[14px] border border-line bg-surface p-5">
           <h2 className="text-[15px] font-semibold text-ink">New voice log</h2>
           <p className="mt-1 text-[12px] leading-4 text-muted">
-            Toph will ask {QUESTIONS.length} short questions. Answer out loud; you can fix the text before it's filed.
+            Toph will ask {QUESTIONS.length} short questions. Answer out loud; you can fix the text before it&rsquo;s filed.
           </p>
           {workers.length > 1 && (
             <label className="mt-4 block">
@@ -259,7 +262,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
           )}
           {speechSupported === false && (
             <p className="mt-3 rounded-[8px] bg-row-hover px-3 py-2 text-[12px] text-ink-2">
-              This browser can't transcribe speech live, so the audio will still be recorded and you can type each answer. Chrome or Safari
+              This browser can&rsquo;t transcribe speech live, so the audio will still be recorded and you can type each answer. Chrome or Safari
               transcribe automatically.
             </p>
           )}
@@ -372,7 +375,7 @@ export function Recorder({ workers, self }: { workers: Worker[]; self: Worker })
                 on <span className="font-medium text-ink">{result.field}</span>
               </>
             ) : null}{" "}
-            ({result.extraction === "claude" ? "Claude" : "keyword heuristic"}). It's waiting for review on the dashboard.
+            ({result.extraction === "claude" ? "Claude" : "keyword heuristic"}). It&rsquo;s waiting for review on the dashboard.
           </p>
           <div className="mt-5 flex gap-2">
             <button type="button" onClick={reset} className="h-11 flex-1 rounded-[10px] border border-line text-[13px] font-medium text-ink hover:bg-row-hover">

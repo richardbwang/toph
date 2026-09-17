@@ -72,7 +72,7 @@ export function Sidebar({ user, dashboardBadge }: { user: SessionUser; dashboard
   const [pending, startTransition] = useTransition();
 
   return (
-    <aside className="sticky top-[var(--page-gap)] flex h-[calc(100vh-2*var(--page-gap))] w-[var(--sidebar-w)] shrink-0 flex-col gap-[10px] overflow-y-auto rounded-[16px] border border-line-4 bg-surface p-[10px]">
+    <aside className="sticky top-[var(--page-gap)] hidden h-[calc(100vh-2*var(--page-gap))] w-[var(--sidebar-w)] shrink-0 flex-col gap-[10px] overflow-y-auto rounded-[16px] border border-line-4 bg-surface p-[10px] md:flex">
       {/* Farm / account */}
       <div className="flex items-center justify-between rounded-[4px] py-[4px] pr-[14px] pl-[4px]">
         <div className="flex items-center gap-[10px]">
@@ -152,5 +152,45 @@ function Avatar({ name, src }: { name: string; src: string | null }) {
         .slice(0, 2)
         .join("")}
     </span>
+  );
+}
+
+/** Compact header for phones (the sidebar is desktop-only, like the design). */
+export function MobileBar({ user }: { user: SessionUser }) {
+  const pathname = usePathname();
+  const [pending, startTransition] = useTransition();
+  const links = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/record", label: "Record" },
+    { href: "/activity-logs", label: "Logs" },
+  ];
+  return (
+    <div className="flex w-full flex-col gap-[10px] rounded-[16px] border border-line-4 bg-surface p-[10px] md:hidden">
+      <div className="flex items-center justify-between pl-[4px]">
+        <div className="flex items-center gap-[10px]">
+          <Avatar name={user.farm.name} src={user.avatarUrl} />
+          <div className="flex flex-col gap-[4px]">
+            <span className="text-[14px] leading-[normal] font-medium text-ink">{user.farm.name}</span>
+            <span className="text-[12px] leading-[normal] text-muted">{user.name}</span>
+          </div>
+        </div>
+        <button type="button" disabled={pending} onClick={() => startTransition(() => logout())} className="flex items-center gap-[8px] rounded-[4px] px-[10px] py-[8px] text-[14px] text-ink hover:bg-nav-active">
+          <LogOut size={16} aria-hidden />
+          Log Out
+        </button>
+      </div>
+      <nav className="flex gap-[4px]" aria-label="Main">
+        {links.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            aria-current={pathname.startsWith(l.href) ? "page" : undefined}
+            className="rounded-[4px] px-[12px] py-[8px] text-[14px] text-ink hover:bg-nav-active aria-[current=page]:bg-nav-active"
+          >
+            {l.label}
+          </Link>
+        ))}
+      </nav>
+    </div>
   );
 }

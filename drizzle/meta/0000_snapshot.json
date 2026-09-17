@@ -1,5 +1,5 @@
 {
-  "id": "578ac472-039b-4c7e-9e4a-f8ca17e03074",
+  "id": "c8c7384e-788e-4269-8478-6e8f7350df7f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1049,11 +1049,16 @@
         "SPRAYING",
         "FERTILIZING",
         "PLANTING",
+        "SEEDING",
         "IRRIGATION",
         "HARVESTING",
         "SCOUTING",
+        "MONITORING",
+        "WEEDING",
         "PRUNING",
+        "PEST_CONTROL",
         "SOIL_WORK",
+        "SOIL_TESTING",
         "EQUIPMENT_MAINTENANCE"
       ]
     },
