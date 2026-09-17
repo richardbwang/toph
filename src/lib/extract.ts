@@ -97,7 +97,10 @@ type ClaudeResult = {
 };
 
 const ANTHROPIC_VERSION = "2023-06-01";
-const FALLBACK_MODEL = "claude-sonnet-4-5";
+// Last known-good id, used only if the Models API itself can't be reached.
+// (The previous hard-coded alias, claude-sonnet-4-5, was retired and started
+// returning 404 — which is why the model is looked up instead of pinned.)
+const FALLBACK_MODEL = "claude-sonnet-5";
 let resolvedModel: Promise<string> | null = null;
 
 /**

@@ -63,7 +63,7 @@ same demo password; the login page lists them).
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Postgres connection string. Local: `postgresql://user:pass@localhost:5432/toph`. Neon strings work as-is (`?sslmode=require` turns on verified TLS). |
 | `ANTHROPIC_API_KEY` | no | Enables Claude for turning voice-log answers into a structured log. Without it a keyword heuristic is used. |
-| `ANTHROPIC_MODEL` | no | Model id for the step above. Defaults to `claude-sonnet-4-5`. |
+| `ANTHROPIC_MODEL` | no | Pins the model for the step above. Unset, the app asks the Models API for the newest Sonnet once per server process (the Settings page shows which one), so a retired model alias never silently breaks the pipeline. |
 
 ### Scripts
 
