@@ -33,9 +33,9 @@ export function LogDetail({
   }, [mapOpen]);
 
   return (
-    <div className="flex w-full items-center justify-center gap-[40px] bg-surface p-[40px]">
+    <div className="flex w-full flex-col items-center justify-center gap-[40px] bg-surface p-[24px] md:p-[40px] min-[1400px]:flex-row">
       {/* Left: recording, tags, summary */}
-      <div className="flex w-[var(--detail-left-w)] shrink-0 flex-col items-center gap-[20px]">
+      <div className="flex w-full shrink-0 flex-col items-center gap-[20px] min-[1400px]:w-[var(--detail-left-w)]">
         <AudioPlayer src={row.audioSrc} peaks={row.recording?.waveform ?? []} durationSec={row.recording?.durationSec ?? 0} />
         <TagEditor logId={row.id} tags={row.tags} suggestions={tagSuggestions} canEdit={canEdit} />
         <div className="flex w-full flex-col items-start gap-[4px] text-[16px] leading-[normal] text-ink">
@@ -45,7 +45,7 @@ export function LogDetail({
       </div>
 
       {/* Right: the field on a satellite map */}
-      <div className="flex min-w-px flex-1 flex-col justify-center gap-[20px] self-stretch">
+      <div className="flex w-full min-w-px flex-1 flex-col justify-center gap-[20px] self-stretch">
         <div className="relative min-h-[240px] flex-1 overflow-hidden rounded-[14px] border-[0.88px] border-line-3">
           {field ? (
             <FieldMap fields={[field]} focus={field} interactive={false} zoom={15} />
