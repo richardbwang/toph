@@ -6,7 +6,26 @@ LavaLab F26 Dev Challenge Figma, implemented as a full-stack app: a Postgres dat
 whose tables mirror the shape of the page, session-based login, and a working
 voice-log pipeline behind the "Play Recording" button.
 
-**Login:** `admin@baysranch.com` / `toph-demo`
+## Try it — nothing to install
+
+**Live site: https://toph-woad.vercel.app** · sign in as `admin@baysranch.com` / `toph-demo`
+
+It is deployed on Vercel with a persistent Postgres database on Neon, so there
+is nothing to build or run locally. A 60-second tour:
+
+1. **Dashboard** — expand a row (click it or **View**): the recording plays,
+   the field appears on the satellite map, tags and review status are live.
+2. **Filters** — use Sort / Filter / Search and watch the URL change; refresh
+   the page and the view is still there.
+3. **Record** (sidebar, or https://toph-woad.vercel.app/record) — tap
+   *Start recording*, allow the microphone, and answer the five questions out
+   loud; the phone reads them to you and files the log by itself. It appears
+   on the dashboard within a few seconds, without a reload.
+4. **Audit Manager** — every review, tag and upload you just did is there.
+
+Works in Chrome or Safari on a laptop or a phone (Firefox has no speech
+recognition, so the recorder falls back to typing). Running it locally is
+described further down for anyone who wants to read the code with the app.
 
 ![The Toph dashboard](docs/dashboard.png)
 
@@ -46,7 +65,7 @@ considered instead.
 Prerequisites: Node 20+, a Postgres database (local, Neon, or Supabase).
 
 ```bash
-git clone <this repo> toph && cd toph
+git clone https://github.com/richardbwang/toph.git && cd toph
 npm install
 cp .env.example .env          # then set DATABASE_URL
 npm run db:migrate            # creates the tables (drizzle/*.sql)
